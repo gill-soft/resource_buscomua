@@ -1,0 +1,300 @@
+<xs:schema attributeFormDefault="unqualified"
+	elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:complexType name="identType">
+		<xs:sequence>
+			<xs:element type="xs:string" name="from" />
+			<xs:element type="xs:string" name="timestamp" />
+			<xs:element type="xs:string" name="to" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="techInfoType">
+		<xs:sequence>
+			<xs:element name="client">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element type="xs:string" name="agent" />
+						<xs:element type="xs:string" name="workplace" />
+						<xs:element type="xs:string" name="uid" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element type="xs:string" name="answerAuthor" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="requestType">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element type="xs:string" name="FromPointKOATUU" />
+			<xs:element type="xs:string" name="ToPointKOATUU" />
+			<xs:element type="xs:string" name="date" />
+			<xs:element type="xs:string" name="daysForward" />
+			<xs:element type="xs:string" name="regularity" />
+			<xs:element type="xs:string" name="price" />
+			<xs:element type="xs:string" name="timeToDep" />
+			<xs:element type="xs:string" name="requiredInfo" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="buyRequestType">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element type="xs:string" name="kod" />
+			<xs:element type="xs:string" name="RoundNum" />
+			<xs:element type="xs:string" name="date" />
+			<xs:element type="xs:string" name="FromPoint" />
+			<xs:element type="xs:string" name="ToPoint" />
+			<xs:element type="xs:string" name="mode" />
+			<xs:element name="Ticket" maxOccurs="unbounded" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element type="xs:string" name="uid" />
+						<xs:element type="xs:string" name="AsUID" />
+						<xs:element type="xs:string" name="type" />
+						<xs:element type="xs:string" name="PassengerInfo" />
+						<xs:element type="xs:string" name="seat" />
+						<xs:element type="xs:string" name="email" />
+						<xs:element type="xs:string" name="phone" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="errorType">
+		<xs:sequence>
+			<xs:element type="xs:string" name="text" />
+			<xs:element type="xs:string" name="debug" />
+		</xs:sequence>
+		<xs:attribute type="xs:string" name="name" />
+	</xs:complexType>
+
+	<xs:complexType name="point">
+		<xs:sequence>
+			<xs:element name="location">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="item" maxOccurs="unbounded"
+							minOccurs="0">
+							<xs:complexType>
+								<xs:simpleContent>
+									<xs:extension base="xs:string">
+										<xs:attribute type="xs:byte" name="level" use="optional" />
+										<xs:attribute type="xs:string" name="name_ua"
+											use="optional" />
+										<xs:attribute type="xs:string" name="name_ru"
+											use="optional" />
+										<xs:attribute type="xs:string" name="name_en"
+											use="optional" />
+									</xs:extension>
+								</xs:simpleContent>
+							</xs:complexType>
+						</xs:element>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:sequence>
+		<xs:attribute type="xs:string" name="kod" use="optional" />
+		<xs:attribute type="xs:string" name="country" use="optional" />
+		<xs:attribute type="xs:string" name="name_ua" use="optional" />
+		<xs:attribute type="xs:string" name="name_ru" use="optional" />
+		<xs:attribute type="xs:string" name="name_en" use="optional" />
+	</xs:complexType>
+
+	<xs:complexType name="pointResponse">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element name="FromPointKOATUU" maxOccurs="unbounded"
+				minOccurs="0" type="point" />
+			<xs:element name="ToPointKOATUU" maxOccurs="unbounded"
+				minOccurs="0" type="point" />
+			<xs:element name="error" type="errorType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="balanceResponse">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element name="balance">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element type="xs:decimal" name="current" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="error" type="errorType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="tripTime">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute type="xs:string" name="time" use="optional" />
+				<xs:attribute type="xs:string" name="date" use="optional" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="tripPoint">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute type="xs:string" name="kod" use="optional" />
+				<xs:attribute type="xs:string" name="name" use="optional" />
+				<xs:attribute type="xs:string" name="address" use="optional" />
+				<xs:attribute type="xs:string" name="phone" use="optional" />
+				<xs:attribute type="xs:byte" name="sms_notification"
+					use="optional" />
+				<xs:attribute type="xs:decimal" name="connect" use="optional" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="tripsResponse">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element name="trip" maxOccurs="unbounded" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="Round">
+							<xs:complexType>
+								<xs:simpleContent>
+									<xs:extension base="xs:string">
+										<xs:attribute type="xs:string" name="num" use="optional" />
+									</xs:extension>
+								</xs:simpleContent>
+							</xs:complexType>
+						</xs:element>
+						<xs:element type="xs:byte" name="regularity" />
+						<xs:element type="xs:string" name="bus" />
+						<xs:element type="xs:decimal" name="distance" />
+						<xs:element name="ArrFromPoint" type="tripTime" />
+						<xs:element name="DepFromPoint" type="tripTime" />
+						<xs:element name="ArrToPoint" type="tripTime" />
+						<xs:element name="DepToPoint" type="tripTime" />
+						<xs:element type="xs:string" name="date" />
+						<xs:element type="xs:decimal" name="price" />
+						<xs:element type="xs:byte" name="freePlaces" />
+						<xs:element type="xs:long" name="lastUpdate" />
+						<xs:element name="FromPoint" type="tripPoint" />
+						<xs:element name="ToPoint" type="tripPoint" />
+						<xs:element name="Server" type="tripPoint" />
+						<xs:element type="xs:string" name="tib" />
+						<xs:element type="xs:string" name="requiredInfo" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="error" type="errorType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="pricePart">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute type="xs:string" name="amount" use="optional" />
+				<xs:attribute type="xs:string" name="code" use="optional" />
+				<xs:attribute type="xs:string" name="name" use="optional" />
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+
+	<xs:complexType name="ticketResponse">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element name="Ticket" maxOccurs="unbounded" minOccurs="0">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element type="xs:string" name="uid" />
+						<xs:element name="AsUID">
+							<xs:complexType>
+								<xs:simpleContent>
+									<xs:extension base="xs:string">
+										<xs:attribute type="xs:string" name="askod" />
+									</xs:extension>
+								</xs:simpleContent>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="Round">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="PointFrom" type="tripPoint" />
+									<xs:element name="PointTo" type="tripPoint" />
+								</xs:sequence>
+								<xs:attribute type="xs:string" name="num" />
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="PointFrom" type="tripPoint" />
+						<xs:element name="PointTo" type="tripPoint" />
+						<xs:element name="TimeDeparture" type="tripTime" />
+						<xs:element name="TimeArrival" type="tripTime" />
+						<xs:element name="Place">
+							<xs:complexType>
+								<xs:simpleContent>
+									<xs:extension base="xs:string">
+										<xs:attribute type="xs:string" name="className" />
+									</xs:extension>
+								</xs:simpleContent>
+							</xs:complexType>
+						</xs:element>
+						<xs:element type="xs:string" name="insurance" />
+						<xs:element type="xs:string" name="carrier" />
+						<xs:element type="xs:decimal" name="distance" />
+						<xs:element name="money" type="moneyType" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="seats">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element type="xs:byte" name="seat" maxOccurs="unbounded"
+							minOccurs="0" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="error" type="errorType" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="moneyType">
+		<xs:sequence>
+			<xs:element name="payment" maxOccurs="unbounded"
+				minOccurs="0" type="pricePart" />
+			<xs:element name="addTax" maxOccurs="unbounded" minOccurs="0"
+				type="pricePart" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="cancelResponse">
+		<xs:sequence>
+			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element name="returnStatement">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element type="xs:string" name="AsUID" />
+						<xs:element name="rulesReturn">
+							<xs:complexType>
+								<xs:sequence>
+									<xs:element name="rule" maxOccurs="unbounded"
+										minOccurs="0">
+										<xs:complexType>
+											<xs:simpleContent>
+												<xs:extension base="xs:string">
+													<xs:attribute type="xs:string" name="code" />
+													<xs:attribute type="xs:string" name="count" />
+												</xs:extension>
+											</xs:simpleContent>
+										</xs:complexType>
+									</xs:element>
+								</xs:sequence>
+							</xs:complexType>
+						</xs:element>
+						<xs:element name="money" type="moneyType" />
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="error" type="errorType" />
+		</xs:sequence>
+	</xs:complexType>
+
+</xs:schema>

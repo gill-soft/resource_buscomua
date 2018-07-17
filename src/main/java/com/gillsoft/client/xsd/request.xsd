@@ -1,0 +1,20 @@
+<xs:schema attributeFormDefault="unqualified"
+	elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="types.xsd" />
+
+	<xs:element name="ask">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="ident" type="identType" />
+				<xs:element name="getBalance" type="requestType" />
+				<xs:element name="getListFromPointsKOATUU" type="requestType" />
+				<xs:element name="getListToPointsKOATUU" type="requestType" />
+				<xs:element name="getListTripsWithFreePlacesKOATUU" type="requestType" />
+				<xs:element name="infoTicket" type="buyRequestType" />
+				<xs:element name="buyTicket" type="buyRequestType" />
+				<xs:element name="cancelTicket" type="buyRequestType" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
