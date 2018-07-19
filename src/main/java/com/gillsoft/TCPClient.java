@@ -175,7 +175,7 @@ public class TCPClient {
 		return connections.add(new Object());
 	}
 	
-	private Answer sendRequest(Ask ask, String requestName) throws RequestException {
+	private Answer sendRequest(Ask ask) throws RequestException {
 		Socket socket = null;
 		String request;
 		try {
@@ -291,7 +291,7 @@ public class TCPClient {
 		request.setGetListFromPointsKOATUU(requestType);
 		addIdent(request);
 		addTechInfo(request.getGetListFromPointsKOATUU());
-		Answer answer = sendRequest(request, "getListFromPointsKOATUU");
+		Answer answer = sendRequest(request);
 		return checkAnswer(answer, answer.getGetListFromPointsKOATUU())
 				.getGetListFromPointsKOATUU().getFromPointKOATUU();
 	}
@@ -310,7 +310,7 @@ public class TCPClient {
 		request.setGetListToPointsKOATUU(requestType);
 		addIdent(request);
 		addTechInfo(request.getGetListToPointsKOATUU());
-		Answer answer = sendRequest(request, "getListToPointsKOATUU");
+		Answer answer = sendRequest(request);
 		return checkAnswer(answer, answer.getGetListToPointsKOATUU())
 				.getGetListToPointsKOATUU().getToPointKOATUU();
 	}
@@ -340,7 +340,7 @@ public class TCPClient {
 		request.setGetListTripsWithFreePlacesKOATUU(requestType);
 		addIdent(request);
 		addTechInfo(request.getGetListTripsWithFreePlacesKOATUU());
-		Answer answer = sendRequest(request, "getListTripsWithFreePlacesKOATUU");
+		Answer answer = sendRequest(request);
 		return checkAnswer(answer, answer.getGetListTripsWithFreePlacesKOATUU())
 				.getGetListTripsWithFreePlacesKOATUU().getTrip();
 	}
@@ -359,7 +359,7 @@ public class TCPClient {
 		}
 	}
 	
-	public TicketResponse.Ticket getTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
+	public TicketResponse getTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
 			Date dispatchDate) throws RequestException {
 		Ask request = new Ask();
 		BuyRequestType requestType = new BuyRequestType();
@@ -374,17 +374,17 @@ public class TCPClient {
 		requestType.getTicket().add(ticket);
 		addIdent(request);
 		addTechInfo(request.getInfoTicket());
-		Answer answer = sendRequest(request, "infoTicket");
-		return checkAnswer(answer, answer.getInfoTicket()).getInfoTicket().getTicket().get(0);
+		Answer answer = sendRequest(request);
+		return checkAnswer(answer, answer.getInfoTicket()).getInfoTicket();
 	}
 	
-	public TicketResponse.Ticket getCachedTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
+	public TicketResponse getCachedTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
 			Date dispatchDate) throws RequestException, IOCacheException {
 		return getCachedTripInfo(serverId, tripId, dispatchId, arriveId, dispatchDate,
 				new SeatsUpdateTask(serverId, tripId, dispatchId, arriveId, dispatchDate));
 	}
 	
-	public TicketResponse.Ticket getCachedTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
+	public TicketResponse getCachedTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
 			Date dispatchDate, Runnable task) throws RequestException, IOCacheException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(RedisMemoryCache.OBJECT_NAME, getTripInfoCacheKey(serverId, tripId, dispatchId, arriveId, dispatchDate));
@@ -393,7 +393,7 @@ public class TCPClient {
 		if (result instanceof RequestException) {
 			throw (RequestException) result;
 		} else {
-			return (TicketResponse.Ticket) result;
+			return (TicketResponse) result;
 		}
 	}
 	
@@ -454,7 +454,7 @@ public class TCPClient {
 		requestType.getTicket().add(ticket);
 		addIdent(request);
 		addTechInfo(request.getCancelTicket());
-		return sendRequest(request, "cancelTicket");
+		return sendRequest(request);
 	}
 	
 //	public Answer getStatus(Passenger passenger) throws RequestException{

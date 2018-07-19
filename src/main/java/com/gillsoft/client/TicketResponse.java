@@ -8,6 +8,7 @@
 
 package com.gillsoft.client;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,9 +108,11 @@ import javax.xml.bind.annotation.XmlValue;
     "seats",
     "error"
 })
-public class TicketResponse extends BaseResponse {
+public class TicketResponse extends BaseResponse implements Serializable {
 
-    @XmlElement(required = true)
+	private static final long serialVersionUID = 867881896465325210L;
+	
+	@XmlElement(required = true)
     protected TechInfoType techInfo;
     @XmlElement(name = "Ticket")
     protected List<TicketResponse.Ticket> ticket;
@@ -353,9 +356,11 @@ public class TicketResponse extends BaseResponse {
         "distance",
         "money"
     })
-    public static class Ticket {
+    public static class Ticket implements Serializable {
 
-        @XmlElement(required = true)
+		private static final long serialVersionUID = 7443100574022980787L;
+		
+		@XmlElement(required = true)
         protected String uid;
         @XmlElement(name = "AsUID", required = true)
         protected TicketResponse.Ticket.AsUID asUID;
@@ -690,9 +695,11 @@ public class TicketResponse extends BaseResponse {
         @XmlType(name = "", propOrder = {
             "value"
         })
-        public static class AsUID {
+        public static class AsUID implements Serializable {
 
-            @XmlValue
+			private static final long serialVersionUID = -5127266177486575593L;
+			
+			@XmlValue
             protected String value;
             @XmlAttribute(name = "askod")
             protected String askod;
@@ -769,9 +776,11 @@ public class TicketResponse extends BaseResponse {
         @XmlType(name = "", propOrder = {
             "value"
         })
-        public static class Place {
+        public static class Place implements Serializable {
 
-            @XmlValue
+			private static final long serialVersionUID = 3707031104050628869L;
+			
+			@XmlValue
             protected String value;
             @XmlAttribute(name = "className")
             protected String className;
@@ -853,9 +862,11 @@ public class TicketResponse extends BaseResponse {
             "pointFrom",
             "pointTo"
         })
-        public static class Round {
+        public static class Round implements Serializable {
 
-            @XmlElement(name = "PointFrom", required = true)
+			private static final long serialVersionUID = 1233716434399794957L;
+			
+			@XmlElement(name = "PointFrom", required = true)
             protected TripPoint pointFrom;
             @XmlElement(name = "PointTo", required = true)
             protected TripPoint pointTo;

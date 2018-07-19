@@ -2,6 +2,8 @@ package com.gillsoft.client;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
 import com.gillsoft.model.AbstractJsonModel;
 
 public class TripIdModel extends AbstractJsonModel {
@@ -15,6 +17,8 @@ public class TripIdModel extends AbstractJsonModel {
 	private String id;
 	private String fromId;
 	private String toId;
+	
+	@JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd HH:mm")
 	private Date date;
 	
 	public TripIdModel() {
@@ -98,7 +102,7 @@ public class TripIdModel extends AbstractJsonModel {
 	}
 
 	@Override
-	public TripIdModel create(String arg0) {
-		return (TripIdModel) super.create(arg0);
+	public TripIdModel create(String json) {
+		return (TripIdModel) super.create(json);
 	}
 }

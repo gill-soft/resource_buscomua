@@ -19,7 +19,6 @@ import com.gillsoft.cache.IOCacheException;
 import com.gillsoft.client.Config;
 import com.gillsoft.client.RequestException;
 import com.gillsoft.client.TicketResponse;
-import com.gillsoft.client.TicketResponse.Ticket;
 import com.gillsoft.client.TripIdModel;
 import com.gillsoft.client.TripPackage;
 import com.gillsoft.client.TripPoint;
@@ -186,6 +185,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		tripPrice.setCurrency(Currency.UAH);
 		tripPrice.setAmount(price);
 		tripPrice.setTariff(tariff);
+		segment.setPrice(tripPrice);
 	}
 	
 	private Organisation addOrganisation(Map<String, Organisation> organisations, String name) {
@@ -239,23 +239,41 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	
 	@Override
 	public List<Seat> getSeatsResponse(String tripId) {
-		//TODO
-		
-		// получаем информацию о рейсе
-		try {
-			TripIdModel model = new TripIdModel().create(tripId);
-			Ticket ticket = client.getCachedTripInfo(model.getServerCode(), model.getId(),
-					model.getFromId(), model.getToId(),
-					model.getDate(), null);
-			if (ticket != null) {
+		int tryCount = 0;
+		do {
+			try {
+				TripIdModel model = new TripIdModel().create(tripId);
 				
+				// получаем информацию о рейсе
+				TicketResponse response = client.getCachedTripInfo(model.getServerCode(), model.getId(),
+						model.getFromId(), model.getToId(),
+						model.getDate(), null);
+				if (response != null
+						&& response.getSeats() != null) {
+					List<Seat> seats = new ArrayList<>();
+					for (Byte num : response.getSeats().getSeat()) {
+						if (num != 0) {
+							Seat seat = new Seat();
+							seat.setId(String.valueOf(num));
+							seat.setNumber(seat.getId());
+							seats.add(seat);
+						}
+					}
+					return seats;
+				}
+				return null;
+			} catch (RequestException e) {
+				throw new RestClientException(e.getMessage());
+			} catch (IOCacheException e) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+				}
 			}
-		} catch (RequestException e) {
-			throw new RestClientException(e.getMessage());
-		} catch (IOCacheException e) {
-			// добавляем в результат так как нет еще данных для анализа
-		}
-		throw TCPClient.createUnavailableMethod();
+		// пытаемся получить карту мест в течении 5 секунд
+		} while (tryCount++ < 10);
+		
+		return null;
 	}
 
 	@Override

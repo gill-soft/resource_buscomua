@@ -8,6 +8,8 @@
 
 package com.gillsoft.client;
 
+import java.io.Serializable;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -51,8 +53,10 @@ import javax.xml.bind.annotation.XmlType;
     "client",
     "answerAuthor"
 })
-public class TechInfoType {
+public class TechInfoType implements Serializable {
 
+	private static final long serialVersionUID = -5985591767671481646L;
+	
 	@XmlElement(required = true)
     protected TechInfoType.Client client;
     @XmlElement(required = true)
@@ -134,7 +138,9 @@ public class TechInfoType {
         "workplace",
         "uid"
     })
-    public static class Client {
+    public static class Client implements Serializable {
+		
+		private static final long serialVersionUID = 2537921675149365236L;
 		
 		@XmlElement(required = true)
         protected String agent;

@@ -8,6 +8,7 @@
 
 package com.gillsoft.client;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -40,9 +41,11 @@ import javax.xml.bind.annotation.XmlType;
     "payment",
     "addTax"
 })
-public class MoneyType {
+public class MoneyType implements Serializable {
 
-    protected List<PricePart> payment;
+	private static final long serialVersionUID = -5129189416673139879L;
+	
+	protected List<PricePart> payment;
     protected List<PricePart> addTax;
 
     /**
