@@ -35,6 +35,7 @@
 			<xs:element type="xs:string" name="price" />
 			<xs:element type="xs:string" name="timeToDep" />
 			<xs:element type="xs:string" name="requiredInfo" />
+			<xs:element type="xs:string" name="carrier" />
 		</xs:sequence>
 	</xs:complexType>
 

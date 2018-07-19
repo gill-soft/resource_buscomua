@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 
 import com.gillsoft.cache.CacheHandler;
 import com.gillsoft.cache.IOCacheException;
@@ -52,6 +53,7 @@ import com.gillsoft.client.RequestException;
 import com.gillsoft.client.RequestType;
 import com.gillsoft.client.TechInfoType;
 import com.gillsoft.client.TripsResponse.Trip;
+import com.gillsoft.client.TripsUpdateTask;
 import com.gillsoft.util.StringUtil;
 
 @Component
@@ -61,16 +63,19 @@ public class TCPClient {
 	private static final Logger LOGGER = LogManager.getLogger();
 	
 	public static final String STATIONS_CACHE_KEY = "buscomua.stations.";
-	public static final String TRIPS_CACHE_KEY = "buscomua.trips.";
+	public static final String TRIPS_CACHE_KEY = "buscomua.trips";
 	
 //	private final static String BALANCE_KEY = "BUS_COM_UA_BALANCE";
 //	private final static String BALANCE_KEY_COUNTER = "BALANCE_KEY_COUNTER";
 //	private final static String DEPOSIT_BALANCE_KEY = Utils.getStorageAccessorDepositBalanceKey(StorageAccessors.BUSCOMUA.getCode());
 	private static final String TICKET_TYPE = "ОБЩ";
 	private static final String DATE_FORMAT = "dd.MM.yy";
+	private static final String DATE_TIME_FORMAT = "dd.MM.yy HH:mm";
 	private static final String CHARSET = "UTF-8";
 	
 	public static final FastDateFormat dateFormat = FastDateFormat.getInstance(DATE_FORMAT);
+	public static final FastDateFormat dateTimeFormat = FastDateFormat.getInstance(DATE_TIME_FORMAT);
+	
 	public static final FastDateFormat fullDateFormat = FastDateFormat.getInstance("E MMM dd HH:mm:ss yyyy", Locale.ENGLISH);
 	
 	private BlockingQueue<Object> connections = new ArrayBlockingQueue<>(Config.getPoolSize());
@@ -334,6 +339,20 @@ public class TCPClient {
 				.getGetListTripsWithFreePlacesKOATUU().getTrip();
 	}
 	
+	@SuppressWarnings("unchecked")
+	public List<Trip> getCacehdTrips(String dispatchId, String arriveId, Date dispatchDate)
+			throws RequestException, IOCacheException {
+		Map<String, Object> params = new HashMap<>();
+		params.put(RedisMemoryCache.OBJECT_NAME, getTripCacheKey(dispatchId, arriveId, dispatchDate));
+		params.put(RedisMemoryCache.UPDATE_TASK, new TripsUpdateTask(dispatchId, arriveId, dispatchDate));
+		Object result = cache.read(params);
+		if (result instanceof RequestException) {
+			throw (RequestException) result;
+		} else {
+			return (List<Trip>) result;
+		}
+	}
+	
 	public Answer getTripInfo(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
 			int tickets) throws RequestException {
 		Ask request = new Ask();
@@ -475,9 +494,17 @@ public class TCPClient {
 	public static String getStationCacheKey(String id) {
 		return STATIONS_CACHE_KEY + id;
 	}
+	
+	public static String getTripCacheKey(String from, String to, Date date) {
+		return String.join(".", TRIPS_CACHE_KEY, from, to, dateFormat.format(date));
+	}
 
 	public CacheHandler getCache() {
 		return cache;
+	}
+	
+	public static RestClientException createUnavailableMethod() {
+		return new RestClientException("Method is unavailable");
 	}
 	
 }

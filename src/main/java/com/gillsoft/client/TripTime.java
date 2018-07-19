@@ -8,6 +8,8 @@
 
 package com.gillsoft.client;
 
+import java.io.Serializable;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -37,9 +39,11 @@ import javax.xml.bind.annotation.XmlValue;
 @XmlType(name = "tripTime", propOrder = {
     "value"
 })
-public class TripTime {
+public class TripTime implements Serializable {
 
-    @XmlValue
+	private static final long serialVersionUID = 6119406550819360243L;
+	
+	@XmlValue
     protected String value;
     @XmlAttribute(name = "time")
     protected String time;

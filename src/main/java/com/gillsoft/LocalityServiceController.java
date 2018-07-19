@@ -77,6 +77,7 @@ public class LocalityServiceController extends AbstractLocalityService {
 										for (Point arrivalPoint : points) {
 											Locality arrival = createLocality(arrivalPoint);
 											all.add(arrival);
+											arrivalIds.add(arrivalPoint.getKod());
 										}
 										binding.put(dispatch.getId(), arrivalIds);
 									}
@@ -106,8 +107,8 @@ public class LocalityServiceController extends AbstractLocalityService {
 		locality.setAddress(Lang.EN, getAddress(point, item -> item.getNameEn()));
 		
 		locality.setName(Lang.UA, point.getNameUa());
-		locality.setName(Lang.RU, point.getNameUa());
-		locality.setName(Lang.EN, point.getNameUa());
+		locality.setName(Lang.RU, point.getNameRu());
+		locality.setName(Lang.EN, point.getNameEn());
 		
 		return locality;
 	}

@@ -8,6 +8,7 @@
 
 package com.gillsoft.client;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,7 @@ import javax.xml.bind.annotation.XmlValue;
  *                   &lt;element name="Server" type="{}tripPoint"/>
  *                   &lt;element name="tib" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *                   &lt;element name="requiredInfo" type="{http://www.w3.org/2001/XMLSchema}string"/>
+ *                   &lt;element name="carrier" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *                 &lt;/sequence>
  *               &lt;/restriction>
  *             &lt;/complexContent>
@@ -201,6 +203,7 @@ public class TripsResponse extends BaseResponse {
      *         &lt;element name="Server" type="{}tripPoint"/>
      *         &lt;element name="tib" type="{http://www.w3.org/2001/XMLSchema}string"/>
      *         &lt;element name="requiredInfo" type="{http://www.w3.org/2001/XMLSchema}string"/>
+     *         &lt;element name="carrier" type="{http://www.w3.org/2001/XMLSchema}string"/>
      *       &lt;/sequence>
      *     &lt;/restriction>
      *   &lt;/complexContent>
@@ -227,11 +230,14 @@ public class TripsResponse extends BaseResponse {
         "toPoint",
         "server",
         "tib",
-        "requiredInfo"
+        "requiredInfo",
+        "carrier"
     })
-    public static class Trip {
+    public static class Trip implements Serializable {
 
-        @XmlElement(name = "Round", required = true)
+		private static final long serialVersionUID = 7963763003723033716L;
+		
+		@XmlElement(name = "Round", required = true)
         protected TripsResponse.Trip.Round round;
         protected byte regularity;
         @XmlElement(required = true)
@@ -262,6 +268,8 @@ public class TripsResponse extends BaseResponse {
         protected String tib;
         @XmlElement(required = true)
         protected String requiredInfo;
+        @XmlElement(required = true)
+        protected String carrier;
 
         /**
          * Gets the value of the round property.
@@ -646,6 +654,30 @@ public class TripsResponse extends BaseResponse {
         public void setRequiredInfo(String value) {
             this.requiredInfo = value;
         }
+        
+        /**
+        * Gets the value of the carrier property.
+        * 
+        * @return
+        *     possible object is
+        *     {@link String }
+        *     
+        */
+       public String getCarrier() {
+           return carrier;
+       }
+
+       /**
+        * Sets the value of the carrier property.
+        * 
+        * @param value
+        *     allowed object is
+        *     {@link String }
+        *     
+        */
+       public void setCarrier(String value) {
+           this.carrier = value;
+       }
 
 
         /**
@@ -669,9 +701,11 @@ public class TripsResponse extends BaseResponse {
         @XmlType(name = "", propOrder = {
             "value"
         })
-        public static class Round {
+        public static class Round implements Serializable {
 
-            @XmlValue
+			private static final long serialVersionUID = 2933046028044089247L;
+			
+			@XmlValue
             protected String value;
             @XmlAttribute(name = "num")
             protected String num;

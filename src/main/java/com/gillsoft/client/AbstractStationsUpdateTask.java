@@ -44,6 +44,7 @@ public abstract class AbstractStationsUpdateTask implements Runnable, Serializab
 			params.put(RedisMemoryCache.UPDATE_TASK, this);
 			client.getCache().write(cacheObject, params);
 		} catch (IOCacheException e) {
+			e.printStackTrace();
 		}
 	}
 

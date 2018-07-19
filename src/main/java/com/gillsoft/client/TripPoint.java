@@ -8,6 +8,7 @@
 
 package com.gillsoft.client;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -42,9 +43,11 @@ import javax.xml.bind.annotation.XmlValue;
 @XmlType(name = "tripPoint", propOrder = {
     "value"
 })
-public class TripPoint {
+public class TripPoint implements Serializable {
 
-    @XmlValue
+	private static final long serialVersionUID = -6968770209206844997L;
+	
+	@XmlValue
     protected String value;
     @XmlAttribute(name = "kod")
     protected String kod;

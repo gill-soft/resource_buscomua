@@ -21,7 +21,7 @@ public class ArrivalUpdateTask extends AbstractStationsUpdateTask {
 	@Override
 	protected List<Point> createCacheObject(TCPClient client, Map<String, Object> params)
 			throws IOCacheException, RequestException {
-		return client.getCachedArrivalStations(stationId);
+		return client.getArrivalStations(stationId);
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.gillsoft.client;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Properties;
 
 import org.springframework.core.io.ClassPathResource;
@@ -60,8 +61,8 @@ public class Config {
 		return properties.getProperty("min.price");
 	}
 	
-	public static String getConnect() {
-		return properties.getProperty("connect");
+	public static BigDecimal getConnect() {
+		return new BigDecimal(properties.getProperty("connect"));
 	}
 	
 	public static String getRegularity() {
