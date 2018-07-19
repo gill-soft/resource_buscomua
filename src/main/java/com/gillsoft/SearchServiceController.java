@@ -11,12 +11,15 @@ import java.util.concurrent.Callable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientException;
 
 import com.gillsoft.abstract_rest_service.SimpleAbstractTripSearchService;
 import com.gillsoft.cache.CacheHandler;
 import com.gillsoft.cache.IOCacheException;
 import com.gillsoft.client.Config;
 import com.gillsoft.client.RequestException;
+import com.gillsoft.client.TicketResponse;
+import com.gillsoft.client.TicketResponse.Ticket;
 import com.gillsoft.client.TripIdModel;
 import com.gillsoft.client.TripPackage;
 import com.gillsoft.client.TripPoint;
@@ -53,14 +56,12 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 
 	@Override
 	public List<ReturnCondition> getConditionsResponse(String tripId, String tariffId) {
-		// TODO Auto-generated method stub
-		return null;
+		throw TCPClient.createUnavailableMethod();
 	}
 
 	@Override
 	public List<Document> getDocumentsResponse(String tripId) {
-		// TODO Auto-generated method stub
-		return null;
+		throw TCPClient.createUnavailableMethod();
 	}
 
 	@Override
@@ -103,20 +104,34 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 			for (Trip trip : result.getTrips()) {
 				if (trip.getServer().getConnect().compareTo(Config.getConnect()) >= 0) {
 					
+					
 					// делаем ид, по которому сможем продать
-					String segmentKey = null;
+					TripIdModel model = null;
 					try {
-						segmentKey = new TripIdModel(trip.getServer().getKod(),
+						model = new TripIdModel(trip.getServer().getKod(),
 								trip.getServer().getName(),
 								getAddress(trip.getServer()),
 								trip.getTib(),
 								trip.getRound().getNum(),
 								trip.getFromPoint().getKod(),
 								trip.getToPoint().getKod(),
-								TCPClient.dateFormat.parse(trip.getDate())).asString();
+								TCPClient.dateFormat.parse(trip.getDate()));
 					} catch (ParseException e) {
 					}
-					if (segmentKey != null) {
+					if (model != null) {
+						
+						// проверяем можно ли продавать на рейс
+						try {
+							client.getCachedTripInfo(model.getServerCode(), model.getId(),
+									model.getFromId(), model.getToId(),
+									model.getDate(), null);
+						} catch (RequestException e) {
+							// если ошибка, то на этот рейс нельзя продать и его в результат не добавляем
+							continue;
+						} catch (IOCacheException e) {
+							// добавляем в результат так как нет еще данных для анализа
+						}
+						String segmentKey = model.asString();
 						com.gillsoft.model.Trip resTrip = new com.gillsoft.model.Trip();
 						addSegment(segmentKey, vehicles, localities, organisations, segments, trip);
 						resTrip.setId(segmentKey);
@@ -224,8 +239,23 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	
 	@Override
 	public List<Seat> getSeatsResponse(String tripId) {
-		// TODO Auto-generated method stub
-		return null;
+		//TODO
+		
+		// получаем информацию о рейсе
+		try {
+			TripIdModel model = new TripIdModel().create(tripId);
+			Ticket ticket = client.getCachedTripInfo(model.getServerCode(), model.getId(),
+					model.getFromId(), model.getToId(),
+					model.getDate(), null);
+			if (ticket != null) {
+				
+			}
+		} catch (RequestException e) {
+			throw new RestClientException(e.getMessage());
+		} catch (IOCacheException e) {
+			// добавляем в результат так как нет еще данных для анализа
+		}
+		throw TCPClient.createUnavailableMethod();
 	}
 
 	@Override

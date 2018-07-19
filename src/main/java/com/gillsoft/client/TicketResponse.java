@@ -107,7 +107,7 @@ import javax.xml.bind.annotation.XmlValue;
     "seats",
     "error"
 })
-public class TicketResponse {
+public class TicketResponse extends BaseResponse {
 
     @XmlElement(required = true)
     protected TechInfoType techInfo;

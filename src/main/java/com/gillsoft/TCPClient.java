@@ -51,7 +51,9 @@ import com.gillsoft.client.IdentType;
 import com.gillsoft.client.Point;
 import com.gillsoft.client.RequestException;
 import com.gillsoft.client.RequestType;
+import com.gillsoft.client.SeatsUpdateTask;
 import com.gillsoft.client.TechInfoType;
+import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TripsResponse.Trip;
 import com.gillsoft.client.TripsUpdateTask;
 import com.gillsoft.util.StringUtil;
@@ -64,6 +66,10 @@ public class TCPClient {
 	
 	public static final String STATIONS_CACHE_KEY = "buscomua.stations.";
 	public static final String TRIPS_CACHE_KEY = "buscomua.trips";
+	public static final String TRIP_INFO_CACHE_KEY = "buscomua.trip.info";
+	
+	public static final String CANCELATION_MODE = "cancelation";
+	public static final String RETURN_MODE = "return";
 	
 //	private final static String BALANCE_KEY = "BUS_COM_UA_BALANCE";
 //	private final static String BALANCE_KEY_COUNTER = "BALANCE_KEY_COUNTER";
@@ -353,8 +359,8 @@ public class TCPClient {
 		}
 	}
 	
-	public Answer getTripInfo(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
-			int tickets) throws RequestException {
+	public TicketResponse.Ticket getTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
+			Date dispatchDate) throws RequestException {
 		Ask request = new Ask();
 		BuyRequestType requestType = new BuyRequestType();
 		requestType.setFromPoint(dispatchId);
@@ -365,12 +371,30 @@ public class TCPClient {
 		request.setInfoTicket(requestType);
 		Ticket ticket = new Ticket();
 		ticket.setType(TICKET_TYPE);
-		for (int i = 0; i < tickets; i++) {
-			requestType.getTicket().add(ticket);
-		}
+		requestType.getTicket().add(ticket);
 		addIdent(request);
 		addTechInfo(request.getInfoTicket());
-		return sendRequest(request, "infoTicket");
+		Answer answer = sendRequest(request, "infoTicket");
+		return checkAnswer(answer, answer.getInfoTicket()).getInfoTicket().getTicket().get(0);
+	}
+	
+	public TicketResponse.Ticket getCachedTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
+			Date dispatchDate) throws RequestException, IOCacheException {
+		return getCachedTripInfo(serverId, tripId, dispatchId, arriveId, dispatchDate,
+				new SeatsUpdateTask(serverId, tripId, dispatchId, arriveId, dispatchDate));
+	}
+	
+	public TicketResponse.Ticket getCachedTripInfo(String serverId, String tripId, String dispatchId, String arriveId,
+			Date dispatchDate, Runnable task) throws RequestException, IOCacheException {
+		Map<String, Object> params = new HashMap<>();
+		params.put(RedisMemoryCache.OBJECT_NAME, getTripInfoCacheKey(serverId, tripId, dispatchId, arriveId, dispatchDate));
+		params.put(RedisMemoryCache.UPDATE_TASK, task);
+		Object result = cache.read(params);
+		if (result instanceof RequestException) {
+			throw (RequestException) result;
+		} else {
+			return (TicketResponse.Ticket) result;
+		}
 	}
 	
 //	public Answer buy(String serverId, String tripId, String dispatchId,
@@ -497,6 +521,10 @@ public class TCPClient {
 	
 	public static String getTripCacheKey(String from, String to, Date date) {
 		return String.join(".", TRIPS_CACHE_KEY, from, to, dateFormat.format(date));
+	}
+	
+	public static String getTripInfoCacheKey(String serverId, String tripId, String from, String to, Date date) {
+		return String.join(".", TRIP_INFO_CACHE_KEY, serverId, tripId, from, to, dateFormat.format(date));
 	}
 
 	public CacheHandler getCache() {

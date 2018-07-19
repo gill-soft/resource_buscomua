@@ -85,6 +85,14 @@ public class Config {
 		return Long.valueOf(properties.getProperty("cache.trip.update.delay"));
 	}
 	
+	public static long getCacheTripSeatsTimeToLive() {
+		return Long.valueOf(properties.getProperty("cache.trip.seats.time.to.live"));
+	}
+	
+	public static long getCacheTripSeatsUpdateDelay() {
+		return Long.valueOf(properties.getProperty("cache.trip.seats.update.delay"));
+	}
+	
 	public static long getCacheStationsUpdateDelay() {
 		return Long.valueOf(properties.getProperty("cache.stations.update.delay"));
 	}
