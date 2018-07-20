@@ -10,6 +10,10 @@ import java.io.Reader;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -56,6 +60,8 @@ import com.gillsoft.client.TechInfoType;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TripsResponse.Trip;
 import com.gillsoft.client.TripsUpdateTask;
+import com.gillsoft.model.Customer;
+import com.gillsoft.model.ServiceItem;
 import com.gillsoft.util.StringUtil;
 
 @Component
@@ -67,6 +73,7 @@ public class TCPClient {
 	public static final String STATIONS_CACHE_KEY = "buscomua.stations.";
 	public static final String TRIPS_CACHE_KEY = "buscomua.trips";
 	public static final String TRIP_INFO_CACHE_KEY = "buscomua.trip.info";
+	public static final String UID_CACHE_KEY = "buscomua.uid.";
 	
 	public static final String CANCELATION_MODE = "cancelation";
 	public static final String RETURN_MODE = "return";
@@ -77,7 +84,7 @@ public class TCPClient {
 	private static final String TICKET_TYPE = "ОБЩ";
 	private static final String DATE_FORMAT = "dd.MM.yy";
 	private static final String DATE_TIME_FORMAT = "dd.MM.yy HH:mm";
-	private static final String CHARSET = "UTF-8";
+	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	
 	public static final FastDateFormat dateFormat = FastDateFormat.getInstance(DATE_FORMAT);
 	public static final FastDateFormat dateTimeFormat = FastDateFormat.getInstance(DATE_TIME_FORMAT);
@@ -242,7 +249,7 @@ public class TCPClient {
         marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         marshaller.marshal(object, baos);
-    	return new String(baos.toByteArray());
+    	return new String(baos.toByteArray(), CHARSET);
     }
 	
 	@SuppressWarnings("unchecked")
@@ -397,17 +404,16 @@ public class TCPClient {
 		}
 	}
 	
-//	public Answer buy(String serverId, String tripId, String dispatchId,
-//			String arriveId, Date dispatchDate, List<Passenger> passengers)
-//			throws RequestException {
-//		Ask request = new Ask();
-//		BuyRequestType requestType = new BuyRequestType();
-//		requestType.setFromPoint(dispatchId);
-//		requestType.setToPoint(arriveId);
-//		requestType.setDate(Utils.formatDate(dispatchDate, DATE_FORMAT));
-//		requestType.setKod(serverId);
-//		requestType.setRoundNum(tripId);
-//		request.setBuyTicket(requestType);
+	public Answer buy(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
+			Map<String, Customer> customers, List<ServiceItem> services) throws RequestException {
+		Ask request = new Ask();
+		BuyRequestType requestType = new BuyRequestType();
+		requestType.setFromPoint(dispatchId);
+		requestType.setToPoint(arriveId);
+		requestType.setDate(dateFormat.format(dispatchDate));
+		requestType.setKod(serverId);
+		requestType.setRoundNum(tripId);
+		request.setBuyTicket(requestType);
 //		for (Passenger passenger : passengers) {
 //			Ticket ticket = new Ticket();
 //			ticket.setUid(createUid(passenger.getServiceId()));
@@ -422,13 +428,13 @@ public class TCPClient {
 //			ticket.setPhone(Utils.getNumberFromStringAsString(passenger.getPhone()));
 //			requestType.getTicket().add(ticket);
 //		}
-//		addIdent(request);
-//		addTechInfo(request.getBuyTicket());
-//		return sendRequest(request, "buyTicket");
-//	}
+		addIdent(request);
+		addTechInfo(request.getBuyTicket());
+		return sendRequest(request);
+	}
 	
-	public static String createUid(String serviceId) {
-		String s = Config.getPrefix() + String.format("%9s", serviceId).replaceAll(" ", "0");
+	public String createUid(String random) {
+		String s = Config.getPrefix() + String.format("%9s", random).replaceAll(" ", "0");
 		int summ = 0;
 		for (int i = 0; i < s.length(); i++) {
 			summ += Integer.valueOf(String.valueOf(s.charAt(i)));
@@ -519,6 +525,10 @@ public class TCPClient {
 		return STATIONS_CACHE_KEY + id;
 	}
 	
+	public static String getUidCacheKey(String id) {
+		return UID_CACHE_KEY + id;
+	}
+	
 	public static String getTripCacheKey(String from, String to, Date date) {
 		return String.join(".", TRIPS_CACHE_KEY, from, to, dateFormat.format(date));
 	}
@@ -533,6 +543,34 @@ public class TCPClient {
 	
 	public static RestClientException createUnavailableMethod() {
 		return new RestClientException("Method is unavailable");
+	}
+	
+	public String getRandomId() {
+		try {
+			Integer value = null;
+			Map<String, Object> params = new HashMap<>();
+			do {
+				SecureRandom crunchifyPRNG = SecureRandom.getInstance("SHA1PRNG");
+				value = new Integer(crunchifyPRNG.nextInt());
+				
+				params.put(RedisMemoryCache.OBJECT_NAME, getStationCacheKey(String.valueOf(value)));
+				params.put(RedisMemoryCache.IGNORE_AGE, true);
+				try {
+					cache.read(params);
+					
+					// если не упал IOCacheException, то в кэше есть запись и нужно перегенерировать id
+					value = -1 * Math.abs(value);
+				} catch (IOCacheException e) {
+				}
+			} while (value < 0 || String.valueOf(value).length() > 9);
+			try {
+				cache.write(value, params);
+			} catch (IOCacheException e) {
+			}
+			return String.valueOf(value);
+		} catch (NoSuchAlgorithmException e) {
+			return "";
+		}
 	}
 	
 }

@@ -55,6 +55,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 
 	@Override
 	public List<ReturnCondition> getConditionsResponse(String tripId, String tariffId) {
+		// TODO Auto-generated method stub
 		throw TCPClient.createUnavailableMethod();
 	}
 
@@ -154,8 +155,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		if (segment == null) {
 			segment = new Segment();
 			
-			segment.setNumber(trip.getRound().getNum() + " "
-	        		+ trip.getRound().getValue());
+			segment.setNumber(trip.getRound().getNum());
 			
 			segment.setDeparture(addLocality(localities, trip.getFromPoint()));
 			segment.setArrival(addLocality(localities, trip.getToPoint()));
@@ -188,7 +188,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		segment.setPrice(tripPrice);
 	}
 	
-	private Organisation addOrganisation(Map<String, Organisation> organisations, String name) {
+	public Organisation addOrganisation(Map<String, Organisation> organisations, String name) {
 		if (name == null) {
 			return null;
 		}
@@ -202,7 +202,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		return new Organisation(key);
 	}
 	
-	private Vehicle addVehicle(Map<String, Vehicle> vehicles, String bus) {
+	public Vehicle addVehicle(Map<String, Vehicle> vehicles, String bus) {
 		if (bus == null) {
 			return null;
 		}
@@ -216,11 +216,11 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		return new Vehicle(key);
 	}
 	
-	private Locality addLocality(Map<String, Locality> localities, TripPoint point) {
+	public Locality addLocality(Map<String, Locality> localities, TripPoint point) {
 		Locality locality = localities.get(point.getKod());
 		if (locality == null) {
 			locality = new Locality();
-			locality.setName(Lang.UA, point.getName());
+			locality.setName(Lang.UA, point.getName() != null ? point.getName() : point.getValue());
 			locality.setAddress(Lang.UA, getAddress(point));
 			localities.put(point.getKod(), locality);
 		}
@@ -239,29 +239,32 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	
 	@Override
 	public List<Seat> getSeatsResponse(String tripId) {
+		TripIdModel model = new TripIdModel().create(tripId);
+		TicketResponse response = getTicketSeats(model);
+		if (response != null
+				&& response.getSeats() != null) {
+			List<Seat> seats = new ArrayList<>();
+			for (Byte num : response.getSeats().getSeat()) {
+				if (num != 0) {
+					Seat seat = new Seat();
+					seat.setId(String.valueOf(num));
+					seat.setNumber(seat.getId());
+					seats.add(seat);
+				}
+			}
+			return seats;
+		}
+		return null;
+	}
+	
+	public TicketResponse getTicketSeats(TripIdModel model) {
 		int tryCount = 0;
 		do {
 			try {
-				TripIdModel model = new TripIdModel().create(tripId);
-				
 				// получаем информацию о рейсе
-				TicketResponse response = client.getCachedTripInfo(model.getServerCode(), model.getId(),
+				return client.getCachedTripInfo(model.getServerCode(), model.getId(),
 						model.getFromId(), model.getToId(),
-						model.getDate(), null);
-				if (response != null
-						&& response.getSeats() != null) {
-					List<Seat> seats = new ArrayList<>();
-					for (Byte num : response.getSeats().getSeat()) {
-						if (num != 0) {
-							Seat seat = new Seat();
-							seat.setId(String.valueOf(num));
-							seat.setNumber(seat.getId());
-							seats.add(seat);
-						}
-					}
-					return seats;
-				}
-				return null;
+						model.getDate());
 			} catch (RequestException e) {
 				throw new RestClientException(e.getMessage());
 			} catch (IOCacheException e) {

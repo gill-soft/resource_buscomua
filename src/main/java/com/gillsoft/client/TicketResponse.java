@@ -246,9 +246,11 @@ public class TicketResponse extends BaseResponse implements Serializable {
     @XmlType(name = "", propOrder = {
         "seat"
     })
-    public static class Seats {
+    public static class Seats implements Serializable {
 
-        @XmlElement(type = Byte.class)
+		private static final long serialVersionUID = -8734754521268194720L;
+		
+		@XmlElement(type = Byte.class)
         protected List<Byte> seat;
 
         /**

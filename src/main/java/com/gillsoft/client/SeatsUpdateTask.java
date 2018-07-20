@@ -49,7 +49,7 @@ public class SeatsUpdateTask implements Runnable, Serializable {
 			
 			// ошибку тоже кладем в кэш до времени отправления рейсов и не обновляем
 			params.put(RedisMemoryCache.TIME_TO_LIVE, dispatchDate.getTime() - System.currentTimeMillis());
-			params.put(RedisMemoryCache.UPDATE_DELAY, null);
+			params.put(RedisMemoryCache.UPDATE_TASK, null);
 			cache = e;
 		}
 		try {
