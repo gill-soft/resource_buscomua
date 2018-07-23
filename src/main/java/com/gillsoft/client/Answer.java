@@ -33,6 +33,7 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="infoTicket" type="{}ticketResponse"/>
  *         &lt;element name="buyTicket" type="{}ticketResponse"/>
  *         &lt;element name="cancelTicket" type="{}cancelResponse"/>
+ *         &lt;element name="statusTicket" type="{}cancelResponse"/>
  *         &lt;element name="error" type="{}errorType"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
@@ -52,6 +53,7 @@ import javax.xml.bind.annotation.XmlType;
     "infoTicket",
     "buyTicket",
     "cancelTicket",
+    "statusTicket",
     "error"
 })
 @XmlRootElement(name = "answer")
@@ -73,6 +75,8 @@ public class Answer {
     protected TicketResponse buyTicket;
     @XmlElement(required = true)
     protected CancelResponse cancelTicket;
+    @XmlElement(required = true)
+    protected TicketResponse statusTicket;
     @XmlElement(required = true)
     protected ErrorType error;
 
@@ -266,6 +270,30 @@ public class Answer {
      */
     public void setCancelTicket(CancelResponse value) {
         this.cancelTicket = value;
+    }
+    
+    /**
+     * Gets the value of the statusTicket property.
+     * 
+     * @return
+     *     possible object is
+     *     {@link TicketResponse }
+     *     
+     */
+    public TicketResponse getStatusTicket() {
+        return statusTicket;
+    }
+
+    /**
+     * Sets the value of the statusTicket property.
+     * 
+     * @param value
+     *     allowed object is
+     *     {@link TicketResponse }
+     *     
+     */
+    public void setStatusTicket(TicketResponse value) {
+        this.statusTicket = value;
     }
 
     /**

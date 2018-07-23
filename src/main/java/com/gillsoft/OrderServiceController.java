@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,6 +17,7 @@ import com.gillsoft.abstract_rest_service.AbstractOrderService;
 import com.gillsoft.cache.IOCacheException;
 import com.gillsoft.cache.RedisMemoryCache;
 import com.gillsoft.client.BuyRequestType;
+import com.gillsoft.client.CancelResponse;
 import com.gillsoft.client.MoneyType;
 import com.gillsoft.client.OrderIdModel;
 import com.gillsoft.client.OrderPart;
@@ -31,6 +33,7 @@ import com.gillsoft.model.Locality;
 import com.gillsoft.model.Organisation;
 import com.gillsoft.model.Price;
 import com.gillsoft.model.RestError;
+import com.gillsoft.model.ReturnCondition;
 import com.gillsoft.model.Seat;
 import com.gillsoft.model.Segment;
 import com.gillsoft.model.ServiceItem;
@@ -44,6 +47,8 @@ public class OrderServiceController extends AbstractOrderService {
 	
 	private static final String PAYMENT_CODE = "БНЛ";
 	private static final String TARIFF_CODE = "ТРФ";
+	private static final String RETURN_CODE = "ВЗР";
+	private static final String YES_CODE = "yes";
 	
 	@Autowired
 	private TCPClient client;
@@ -160,18 +165,18 @@ public class OrderServiceController extends AbstractOrderService {
 	 * Сумма, которую следует перечислить системе «Автовокзал-Сеть» складывается
 	 * из стоимости билета <payment> и стоимости обслуживания операций <addTax>.
 	 */
-	private Price createPrice(MoneyType money) {
+	private Price createPrice(MoneyType money, String paymentCode, String tariffCode, boolean addCommissions) {
 		BigDecimal amount = null;
 		Tariff tariff = null;
 		List<Commission> commissions = new ArrayList<>();
 		for (PricePart part : money.getPayment()) {
 			
 			// если сумма
-			if (part.getCode().equals(PAYMENT_CODE)) {
+			if (part.getCode().equals(paymentCode)) {
 				amount = new BigDecimal(part.getAmount());
 				
 			// если тариф
-			} else if (part.getCode().equals(TARIFF_CODE)) {
+			} else if (part.getCode().equals(tariffCode)) {
 				tariff = new Tariff();
 				tariff.setValue(new BigDecimal(part.getAmount()));
 				tariff.setCode(part.getCode());
@@ -191,8 +196,14 @@ public class OrderServiceController extends AbstractOrderService {
 		price.setAmount(amount);
 		price.setCurrency(Currency.UAH);
 		price.setTariff(tariff);
-		price.setCommissions(commissions);
+		if (addCommissions) {
+			price.setCommissions(commissions);
+		}
 		return price;
+	}
+	
+	private Price createPrice(MoneyType money) {
+		return createPrice(money, PAYMENT_CODE, TARIFF_CODE, true);
 	}
 	
 	private Commission createCommission(PricePart part) {
@@ -408,14 +419,68 @@ public class OrderServiceController extends AbstractOrderService {
 
 	@Override
 	public OrderResponse prepareReturnServicesResponse(OrderRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		OrderResponse response = new OrderResponse();
+		response.setServices(new ArrayList<>(request.getServices().size()));
+		for (ServiceItem serviceItem : request.getServices()) {
+			ServicesIdModel model = new ServicesIdModel().create(serviceItem.getId());
+			try {
+				String asUid = getAsUid(client.createUid(model.getUid()));
+				TicketResponse ticketResponse = client.getStatus(
+						model.getTrip().getServerCode(),
+						model.getTrip().getId(),
+						model.getTrip().getFromId(),
+						model.getTrip().getToId(),
+						model.getTrip().getDate(),
+						model.getUid(), asUid);
+				if (!Objects.equals(YES_CODE, ticketResponse.getCanReturn().getValue())) {
+					throw new Exception(ticketResponse.getCanReturn().getReason());
+				}
+			} catch (Exception e) {
+				serviceItem.setError(new RestError(e.getMessage()));
+			}
+			response.getServices().add(serviceItem);
+		}
+		return response;
 	}
 
 	@Override
 	public OrderResponse returnServicesResponse(OrderRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		OrderResponse response = new OrderResponse();
+		response.setServices(new ArrayList<>(request.getServices().size()));
+		for (ServiceItem serviceItem : request.getServices()) {
+			ServicesIdModel model = new ServicesIdModel().create(serviceItem.getId());
+			try {
+				String asUid = getAsUid(client.createUid(model.getUid()));
+				CancelResponse cancelResponse = client.cancel(
+						model.getTrip().getServerCode(),
+						model.getTrip().getId(),
+						model.getTrip().getFromId(),
+						model.getTrip().getToId(),
+						model.getTrip().getDate(),
+						model.getUid(),
+						asUid, TCPClient.RETURN_MODE);
+				Price price = createPrice(cancelResponse.getReturnStatement().getMoney(), RETURN_CODE, null, false);
+				
+				// считаем тариф
+				Tariff tariff = new Tariff();
+				price.setTariff(tariff);
+				
+				ReturnCondition condition = new ReturnCondition();
+				condition.setDescription(cancelResponse.getReturnStatement().getRulesReturn().getRule()
+						.stream().map(rule -> rule.getValue()).collect(Collectors.joining("\n")));
+				
+				tariff.setReturnConditions(new ArrayList<>(1));
+				tariff.getReturnConditions().add(condition);
+				
+				serviceItem.setPrice(price);
+				serviceItem.setConfirmed(true);
+			} catch (Exception e) {
+				serviceItem.setConfirmed(false);
+				serviceItem.setError(new RestError(e.getMessage()));
+			}
+			response.getServices().add(serviceItem);
+		}
+		return response;
 	}
 
 	@Override

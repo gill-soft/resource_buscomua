@@ -14,6 +14,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.text.ParseException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -431,7 +432,7 @@ public class TCPClient {
 	}
 	
 	public CancelResponse cancel(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
-			String serviceId, String asuid, String mode) throws RequestException {
+			String uid, String asuid, String mode) throws RequestException {
 		Ask request = new Ask();
 		BuyRequestType requestType = new BuyRequestType();
 		requestType.setFromPoint(dispatchId);
@@ -442,7 +443,7 @@ public class TCPClient {
 		requestType.setMode(mode);
 		request.setCancelTicket(requestType);
 		Ticket ticket = new Ticket();
-		ticket.setUid(createUid(serviceId));
+		ticket.setUid(createUid(uid));
 		ticket.setAsUID(asuid);
 		requestType.getTicket().add(ticket);
 		addIdent(request);
@@ -451,27 +452,29 @@ public class TCPClient {
 		return checkAnswer(answer, answer.getCancelTicket()).getCancelTicket();
 	}
 	
-//	public Answer getStatus(Passenger passenger) throws RequestException{
-//		Ask request = new Ask();
-//		BuyRequestType requestType = new BuyRequestType();
-//		
-//		Map<String, Object> map = passenger.getDatasourceMap();
-//		requestType.setKod(map.get("buscomuaServerCode").toString());
-//		requestType.setRoundNum(map.get("TRIPNUMBER").toString());
-//		requestType.setDate(Utils.formatDate((Date) map.get("TRIPPASSENGERDATE"), DATE_FORMAT));
-//		requestType.setFromPoint(map.get("buscomuaPointfromCode").toString());
-//		requestType.setToPoint(map.get("buscomuaPointtoCode").toString());
-//		
-//		request.setStatusTicket(requestType);
-//		Ticket ticket = new Ticket();
-//		
-//		ticket.setUid(createUid(passenger.getServiceId()));
-//		
-//		requestType.getTicket().add(ticket);
-//		addIdent(request);
-//		addTechInfo(request.getStatusTicket());
-//		return sendRequest(request, "statusTicket");
-//	}
+	public TicketResponse getStatus(String serverId, String tripId, String dispatchId, String arriveId,
+			Date dispatchDate, String uid, String asuid) throws RequestException {
+		Ask request = new Ask();
+		BuyRequestType requestType = new BuyRequestType();
+		requestType.setFromPoint(dispatchId);
+		requestType.setToPoint(arriveId);
+		requestType.setDate(dateFormat.format(dispatchDate));
+		requestType.setKod(serverId);
+		requestType.setRoundNum(tripId);
+		request.setStatusTicket(requestType);
+		Ticket ticket = new Ticket();
+		ticket.setUid(createUid(uid));
+		ticket.setAsUID(asuid);
+		requestType.getTicket().add(ticket);
+		addIdent(request);
+		addTechInfo(request.getStatusTicket());
+		Answer answer = sendRequest(request);
+		return checkAnswer(answer, answer.getStatusTicket()).getStatusTicket();
+	}
+	
+	public static void main(String[] args) throws RequestException, ParseException {
+		new TCPClient().getStatus("009801", "154801-808/3001", "000250", "000100", TCPClient.dateFormat.parse("01.08.18"), "322738584", null);
+	}
 	
 //	public void addBalance(BigDecimal added, int ticketCount) {
 //		synchronized (BusTCPClient.class) {
