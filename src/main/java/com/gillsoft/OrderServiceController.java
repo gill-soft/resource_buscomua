@@ -7,15 +7,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gillsoft.abstract_rest_service.AbstractOrderService;
+import com.gillsoft.cache.IOCacheException;
+import com.gillsoft.cache.RedisMemoryCache;
+import com.gillsoft.client.BuyRequestType;
 import com.gillsoft.client.MoneyType;
 import com.gillsoft.client.OrderIdModel;
+import com.gillsoft.client.OrderPart;
+import com.gillsoft.client.PassengerModel;
 import com.gillsoft.client.PricePart;
-import com.gillsoft.client.ServiceIdmodel;
+import com.gillsoft.client.ServicesIdModel;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TripIdModel;
 import com.gillsoft.model.CalcType;
@@ -71,14 +77,15 @@ public class OrderServiceController extends AbstractOrderService {
 			
 			try {
 				TicketResponse ticket = controller.getTicketSeats(tripIdModel);
-				
+				OrderPart part = new OrderPart();
+				part.setTrip(tripIdModel);
+				orderId.getParts().add(part);
 				for (ServiceItem serviceItem : order.getValue()) {
 					ServiceItem item = new ServiceItem();
 					
 					String uid = client.getRandomId();
-					ServiceIdmodel idmodel = new ServiceIdmodel(uid, tripIdModel);
-					orderId.getIds().add(idmodel);
-					item.setId(idmodel.asString());
+					item.setId(new ServicesIdModel(uid, tripIdModel).asString());
+					
 					item.setNumber(client.createUid(uid));
 					
 					// рейс
@@ -93,6 +100,14 @@ public class OrderServiceController extends AbstractOrderService {
 					// стоимость
 					item.setPrice(createPrice(ticket.getTicket().get(0).getMoney()));
 					
+					// добавляем данные о пассажире необходимые при продаже
+					PassengerModel passengerModel = new PassengerModel();
+					passengerModel.setUid(uid);
+					passengerModel.setCustomer(request.getCustomers().get(item.getCustomer().getId()));
+					passengerModel.setPrice(item.getPrice().getAmount());
+					passengerModel.setSeat(item.getSeat().getId());
+					part.getPassengers().add(passengerModel);
+					
 					resultItems.add(item);
 				}
 			} catch (Exception e) {
@@ -103,7 +118,6 @@ public class OrderServiceController extends AbstractOrderService {
 			}
 		}
 		response.setOrderId(orderId.asString());
-		response.setCustomers(request.getCustomers());
 		response.setLocalities(localities);
 		response.setOrganisations(organisations);
 		response.setSegments(segments);
@@ -194,8 +208,9 @@ public class OrderServiceController extends AbstractOrderService {
 	private Seat createSeat(Seat seat, TicketResponse response) {
 		if (response.getSeats() != null) {
 			for (Byte number : response.getSeats().getSeat()) {
-				if (number == Byte.valueOf(seat.getId())) {
+				if (number.byteValue() == Byte.valueOf(seat.getId()).byteValue()) {
 					seat.setNumber(seat.getId());
+					response.getSeats().getSeat().remove(number);
 					return seat;
 				}
 			}
@@ -240,31 +255,155 @@ public class OrderServiceController extends AbstractOrderService {
 
 	@Override
 	public OrderResponse getResponse(String orderId) {
-		// TODO Auto-generated method stub
-		return null;
+		throw TCPClient.createUnavailableMethod();
 	}
 
 	@Override
 	public OrderResponse getServiceResponse(String serviceId) {
-		// TODO Auto-generated method stub
-		return null;
+		throw TCPClient.createUnavailableMethod();
 	}
 
 	@Override
 	public OrderResponse bookingResponse(String orderId) {
 		throw TCPClient.createUnavailableMethod();
 	}
+	
+	private List<BuyRequestType.Ticket> createRequestTickets(List<PassengerModel> passengerModels) {
+		List<BuyRequestType.Ticket> tickets = new ArrayList<>();
+		for (PassengerModel passModel : passengerModels) {
+			BuyRequestType.Ticket ticket = new BuyRequestType.Ticket();
+			ticket.setUid(client.createUid(passModel.getUid()));
+			String name = String.join(" ", passModel.getCustomer().getSurname(),
+					passModel.getCustomer().getName());
+			name = name.replaceAll("[^ \\-'\\.a-zA-ZА-Яа-яіІїЇєЄ]", "");
+			if (name.length() > 32) {
+				name = name.substring(0, 32);
+			}
+			ticket.setPassengerInfo(name);
+			ticket.setEmail(passModel.getCustomer().getEmail());
+			ticket.setPhone(passModel.getCustomer().getPhone());
+			ticket.setSeat(passModel.getSeat());
+			tickets.add(ticket);
+		}
+		return tickets;
+	}
 
 	@Override
 	public OrderResponse confirmResponse(String orderId) {
-		// TODO Auto-generated method stub
+
+		// формируем ответ
+		OrderResponse response = new OrderResponse();
+		List<ServiceItem> resultItems = new ArrayList<>();
+		
+		// преобразовываем ид заказа в объкт
+		OrderIdModel orderIdModel = new OrderIdModel().create(orderId);
+		
+		// выкупаем заказы и формируем ответ
+		for (OrderPart part : orderIdModel.getParts()) {
+			try {
+				List<BuyRequestType.Ticket> tickets = createRequestTickets(part.getPassengers());
+				
+				TicketResponse ticketResponse = client.buy(part.getTrip().getServerCode(),
+						part.getTrip().getId(),
+						part.getTrip().getFromId(),
+						part.getTrip().getToId(),
+						part.getTrip().getDate(),
+						tickets);
+				for (TicketResponse.Ticket ticket : ticketResponse.getTicket()) {
+					for (PassengerModel passModel : part.getPassengers()) {
+						if (Objects.equals(ticket.getUid(), client.createUid(passModel.getUid()))) {
+							ServiceItem item = new ServiceItem();
+							item.setId(new ServicesIdModel(passModel.getUid(), part.getTrip()).asString());
+							item.setConfirmed(true);
+							
+							// обновляем стоимость билета
+							item.setPrice(createPrice(ticket.getMoney()));
+							
+							// добавляем AsUid
+							item.setAdditionals(new HashMap<>());
+							item.getAdditionals().put("AsUid", ticket.getAsUID().getValue());
+							
+							// сохраняем AsUid в кэш, чтобы можно было аннулировать потом заказ
+							saveAsUid(ticket.getUid(), ticket.getAsUID().getValue());
+							
+							resultItems.add(item);
+							break;
+						}
+					}
+				}
+			} catch (Exception e) {
+				for (PassengerModel passModel : part.getPassengers()) {
+					addServiceItems(resultItems, new ServicesIdModel(passModel.getUid(), part.getTrip()),
+							false, new RestError(e.getMessage()));
+				}
+			}
+		}
+		response.setOrderId(orderId);
+		response.setServices(resultItems);
+		return response;
+	}
+	
+	private void saveAsUid(String uid, String asUid) {
+		Map<String, Object> params = new HashMap<>();
+		params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getUidCacheKey(uid));
+		params.put(RedisMemoryCache.IGNORE_AGE, true);
+		try {
+			client.getCache().write(asUid, params);
+		} catch (IOCacheException e) {
+		}
+	}
+	
+	private String getAsUid(String uid) {
+		Map<String, Object> params = new HashMap<>();
+		params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getUidCacheKey(uid));
+		try {
+			return String.valueOf(client.getCache().read(params));
+		} catch (IOCacheException e) {
+		}
 		return null;
 	}
 
 	@Override
 	public OrderResponse cancelResponse(String orderId) {
-		// TODO Auto-generated method stub
-		return null;
+		// формируем ответ
+		OrderResponse response = new OrderResponse();
+		List<ServiceItem> resultItems = new ArrayList<>();
+		
+		// преобразовываем ид заказа в объкт
+		OrderIdModel orderIdModel = new OrderIdModel().create(orderId);
+		
+		// выкупаем заказы и формируем ответ
+		for (OrderPart part : orderIdModel.getParts()) {
+			for (PassengerModel passModel : part.getPassengers()) {
+				try {
+					String asUid = getAsUid(client.createUid(passModel.getUid()));
+					client.cancel(part.getTrip().getServerCode(),
+							part.getTrip().getId(),
+							part.getTrip().getFromId(),
+							part.getTrip().getToId(),
+							part.getTrip().getDate(),
+							passModel.getUid(),
+							asUid, TCPClient.CANCELATION_MODE);
+					addServiceItems(resultItems, new ServicesIdModel(passModel.getUid(), part.getTrip()),
+							true, null);
+				} catch (Exception e) {
+					addServiceItems(resultItems, new ServicesIdModel(passModel.getUid(), part.getTrip()),
+							false, new RestError(e.getMessage()));
+				}
+			}
+		}
+		response.setOrderId(orderId);
+		response.setServices(resultItems);
+		return response;
+	}
+	
+	private void addServiceItems(List<ServiceItem> resultItems, ServicesIdModel ticket, boolean confirmed,
+			RestError error) {
+		ServiceItem serviceItem = new ServiceItem();
+		serviceItem.setId(ticket.asString());
+		serviceItem.setConfirmed(confirmed);
+		serviceItem.setError(error);
+		resultItems.add(serviceItem);
 	}
 
 	@Override

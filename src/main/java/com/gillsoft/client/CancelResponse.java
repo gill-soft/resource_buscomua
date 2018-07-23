@@ -76,7 +76,7 @@ import javax.xml.bind.annotation.XmlValue;
     "returnStatement",
     "error"
 })
-public class CancelResponse {
+public class CancelResponse extends BaseResponse {
 
     @XmlElement(required = true)
     protected TechInfoType techInfo;

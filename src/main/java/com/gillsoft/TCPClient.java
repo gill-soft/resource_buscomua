@@ -49,6 +49,7 @@ import com.gillsoft.client.Ask;
 import com.gillsoft.client.BaseResponse;
 import com.gillsoft.client.BuyRequestType;
 import com.gillsoft.client.BuyRequestType.Ticket;
+import com.gillsoft.client.CancelResponse;
 import com.gillsoft.client.Config;
 import com.gillsoft.client.DispatchUpdateTask;
 import com.gillsoft.client.IdentType;
@@ -60,8 +61,6 @@ import com.gillsoft.client.TechInfoType;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TripsResponse.Trip;
 import com.gillsoft.client.TripsUpdateTask;
-import com.gillsoft.model.Customer;
-import com.gillsoft.model.ServiceItem;
 import com.gillsoft.util.StringUtil;
 
 @Component
@@ -404,8 +403,8 @@ public class TCPClient {
 		}
 	}
 	
-	public Answer buy(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
-			Map<String, Customer> customers, List<ServiceItem> services) throws RequestException {
+	public TicketResponse buy(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
+			List<Ticket> tickets) throws RequestException {
 		Ask request = new Ask();
 		BuyRequestType requestType = new BuyRequestType();
 		requestType.setFromPoint(dispatchId);
@@ -414,23 +413,11 @@ public class TCPClient {
 		requestType.setKod(serverId);
 		requestType.setRoundNum(tripId);
 		request.setBuyTicket(requestType);
-//		for (Passenger passenger : passengers) {
-//			Ticket ticket = new Ticket();
-//			ticket.setUid(createUid(passenger.getServiceId()));
-//			String name = Utils.getFullyName(
-//					passenger.getLastName(), passenger.getFirstName(), passenger.getSecondName());
-//			name = name.replaceAll("[^ \\-'\\.a-zA-ZА-Яа-яіІїЇєЄ]", "");
-//			if (name.length() > 32) {
-//				name = name.substring(0, 32);
-//			}
-//			ticket.setPassengerInfo(name);
-//			ticket.setEmail(passenger.getMail());
-//			ticket.setPhone(Utils.getNumberFromStringAsString(passenger.getPhone()));
-//			requestType.getTicket().add(ticket);
-//		}
+		requestType.getTicket().addAll(tickets);
 		addIdent(request);
 		addTechInfo(request.getBuyTicket());
-		return sendRequest(request);
+		Answer answer = sendRequest(request);
+		return checkAnswer(answer, answer.getBuyTicket()).getBuyTicket();
 	}
 	
 	public String createUid(String random) {
@@ -443,7 +430,7 @@ public class TCPClient {
 		return s + summStr.charAt(summStr.length() - 1);
 	}
 	
-	public Answer cancel(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
+	public CancelResponse cancel(String serverId, String tripId, String dispatchId, String arriveId, Date dispatchDate,
 			String serviceId, String asuid, String mode) throws RequestException {
 		Ask request = new Ask();
 		BuyRequestType requestType = new BuyRequestType();
@@ -460,7 +447,8 @@ public class TCPClient {
 		requestType.getTicket().add(ticket);
 		addIdent(request);
 		addTechInfo(request.getCancelTicket());
-		return sendRequest(request);
+		Answer answer = sendRequest(request);
+		return checkAnswer(answer, answer.getCancelTicket()).getCancelTicket();
 	}
 	
 //	public Answer getStatus(Passenger passenger) throws RequestException{
@@ -553,7 +541,7 @@ public class TCPClient {
 				SecureRandom crunchifyPRNG = SecureRandom.getInstance("SHA1PRNG");
 				value = new Integer(crunchifyPRNG.nextInt());
 				
-				params.put(RedisMemoryCache.OBJECT_NAME, getStationCacheKey(String.valueOf(value)));
+				params.put(RedisMemoryCache.OBJECT_NAME, getUidCacheKey(String.valueOf(value)));
 				params.put(RedisMemoryCache.IGNORE_AGE, true);
 				try {
 					cache.read(params);

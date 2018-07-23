@@ -2,7 +2,7 @@ package com.gillsoft.client;
 
 import com.gillsoft.model.AbstractJsonModel;
 
-public class ServiceIdmodel extends AbstractJsonModel {
+public class ServicesIdModel extends AbstractJsonModel {
 
 	private static final long serialVersionUID = -7108292911174683245L;
 
@@ -10,12 +10,20 @@ public class ServiceIdmodel extends AbstractJsonModel {
 
 	private TripIdModel trip;
 	
-	public ServiceIdmodel() {
+	public ServicesIdModel() {
 		
 	}
 
-	public ServiceIdmodel(String uid, TripIdModel trip) {
+	public ServicesIdModel(String uid, TripIdModel trip) {
 		this.uid = uid;
+		this.trip = trip;
+	}
+
+	public TripIdModel getTrip() {
+		return trip;
+	}
+
+	public void setTrip(TripIdModel trip) {
 		this.trip = trip;
 	}
 
@@ -27,17 +35,9 @@ public class ServiceIdmodel extends AbstractJsonModel {
 		this.uid = uid;
 	}
 
-	public TripIdModel getTrip() {
-		return trip;
-	}
-
-	public void setTrip(TripIdModel trip) {
-		this.trip = trip;
-	}
-
 	@Override
-	public ServiceIdmodel create(String json) {
-		return (ServiceIdmodel) super.create(json);
+	public ServicesIdModel create(String json) {
+		return (ServicesIdModel) super.create(json);
 	}
 
 }

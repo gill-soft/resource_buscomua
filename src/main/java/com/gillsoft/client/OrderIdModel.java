@@ -9,18 +9,18 @@ public class OrderIdModel extends AbstractJsonModel {
 
 	private static final long serialVersionUID = 4318484251645220464L;
 
-	private List<ServiceIdmodel> ids = new ArrayList<>();
+	private List<OrderPart> parts = new ArrayList<>();
 
 	public OrderIdModel() {
 
 	}
 
-	public List<ServiceIdmodel> getIds() {
-		return ids;
+	public List<OrderPart> getParts() {
+		return parts;
 	}
 
-	public void setIds(List<ServiceIdmodel> ids) {
-		this.ids = ids;
+	public void setParts(List<OrderPart> parts) {
+		this.parts = parts;
 	}
 
 	@Override

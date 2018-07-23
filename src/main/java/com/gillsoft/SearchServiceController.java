@@ -259,6 +259,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	
 	public TicketResponse getTicketSeats(TripIdModel model) {
 		int tryCount = 0;
+		int totalTry = Config.getRequestTimeout() / 500;
 		do {
 			try {
 				// получаем информацию о рейсе
@@ -274,7 +275,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 				}
 			}
 		// пытаемся получить карту мест в течении 5 секунд
-		} while (tryCount++ < 10);
+		} while (tryCount++ < totalTry);
 		
 		return null;
 	}
