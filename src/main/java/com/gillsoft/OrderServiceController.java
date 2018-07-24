@@ -461,17 +461,17 @@ public class OrderServiceController extends AbstractOrderService {
 						asUid, TCPClient.RETURN_MODE);
 				Price price = createPrice(cancelResponse.getReturnStatement().getMoney(), RETURN_CODE, null, false);
 				
-				// считаем тариф
-				Tariff tariff = new Tariff();
-				price.setTariff(tariff);
-				
-				ReturnCondition condition = new ReturnCondition();
-				condition.setDescription(cancelResponse.getReturnStatement().getRulesReturn().getRule()
-						.stream().map(rule -> rule.getValue()).collect(Collectors.joining("\n")));
-				
-				tariff.setReturnConditions(new ArrayList<>(1));
-				tariff.getReturnConditions().add(condition);
-				
+				if (cancelResponse.getReturnStatement().getRulesReturn() != null) {
+					
+					// добавляем тариф с условием возврата
+					Tariff tariff = new Tariff();
+					price.setTariff(tariff);
+					ReturnCondition condition = new ReturnCondition();
+					condition.setDescription(cancelResponse.getReturnStatement().getRulesReturn().getRule()
+							.stream().map(rule -> rule.getValue()).collect(Collectors.joining("\n")));
+					tariff.setReturnConditions(new ArrayList<>(1));
+					tariff.getReturnConditions().add(condition);
+				}
 				serviceItem.setPrice(price);
 				serviceItem.setConfirmed(true);
 			} catch (Exception e) {
