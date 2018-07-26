@@ -84,8 +84,8 @@ public class LocalityServiceController extends AbstractLocalityService {
 								}
 								LocalityServiceController.all = all;
 								LocalityServiceController.binding = binding;
-								cacheError = false;
 							}
+							cacheError = false;
 						} catch (IOCacheException e) {
 							try {
 								TimeUnit.MILLISECONDS.sleep(100);
@@ -118,20 +118,5 @@ public class LocalityServiceController extends AbstractLocalityService {
 					return p1.getLevel().compareTo(p2.getLevel());
 			}).map(func).collect(Collectors.joining(", "));
 	}
-	
-	/**
-	 * Возвращает населенный пункт по его ид
-	 * 
-	 * @param id
-	 *            Для пунктов отправления ид пункта отправления, для пунктов
-	 *            прибытия ид отправления + ";" + ид прибытия
-	 * @return Населенный пункт
-	 */
-//	public static Locality getLocality(String id) {
-//		if (all == null) {
-//			return null;
-//		}
-//		return internalAll.get(id);
-//	}
 
 }
