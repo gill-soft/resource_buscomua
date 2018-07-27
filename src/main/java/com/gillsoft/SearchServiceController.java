@@ -66,8 +66,12 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 
 	@Override
 	public List<RequiredField> getRequiredFieldsResponse(String tripId) {
-		// TODO Auto-generated method stub
-		return null;
+		List<RequiredField> fields = new ArrayList<>();
+		fields.add(RequiredField.NAME);
+		fields.add(RequiredField.SURNAME);
+		fields.add(RequiredField.PHONE);
+		fields.add(RequiredField.EMAIL);
+		return fields;
 	}
 
 	@Override
@@ -103,7 +107,6 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 			List<com.gillsoft.model.Trip> trips = new ArrayList<>();
 			for (Trip trip : result.getTrips()) {
 				if (trip.getServer().getConnect().compareTo(Config.getConnect()) >= 0) {
-					
 					
 					// делаем ид, по которому сможем продать
 					TripIdModel model = null;
