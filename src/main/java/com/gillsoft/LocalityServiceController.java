@@ -1,9 +1,12 @@
 package com.gillsoft;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -23,7 +26,7 @@ import com.gillsoft.model.request.LocalityRequest;
 @RestController
 public class LocalityServiceController extends AbstractLocalityService {
 	
-	private static List<Locality> all;
+	private static Set<Locality> all;
 	private static Map<String, List<String>> binding;
 	
 	@Autowired
@@ -48,7 +51,7 @@ public class LocalityServiceController extends AbstractLocalityService {
 	private List<Locality> getAllLocalities(LocalityRequest request) {
 		createLocalities();
 		if (all != null) {
-			return all;
+			return new ArrayList<>(all);
 		}
 		return null;
 	}
@@ -64,7 +67,7 @@ public class LocalityServiceController extends AbstractLocalityService {
 							// пункты отправления
 							List<Point> points = client.getCachedDispatchStations();
 							if (points != null) {
-								List<Locality> all = new CopyOnWriteArrayList<>();
+								Set<Locality> all = new CopyOnWriteArraySet<>();
 								Map<String, List<String>> binding = new ConcurrentHashMap<>();
 								for (Point point : points) {
 									Locality dispatch = createLocality(point);
