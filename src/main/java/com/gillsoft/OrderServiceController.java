@@ -218,11 +218,13 @@ public class OrderServiceController extends AbstractOrderService {
 	
 	private Seat createSeat(Seat seat, TicketResponse response) {
 		if (response.getSeats() != null) {
-			for (Byte number : response.getSeats().getSeat()) {
-				if (number.byteValue() == Byte.valueOf(seat.getId()).byteValue()) {
-					seat.setNumber(seat.getId());
-					response.getSeats().getSeat().remove(number);
-					return seat;
+			if (seat != null) {
+				for (Byte number : response.getSeats().getSeat()) {
+					if (number.byteValue() == Byte.valueOf(seat.getId()).byteValue()) {
+						seat.setNumber(seat.getId());
+						response.getSeats().getSeat().remove(number);
+						return seat;
+					}
 				}
 			}
 			// если указанного места нет, то первое свободное
@@ -292,7 +294,9 @@ public class OrderServiceController extends AbstractOrderService {
 			}
 			ticket.setPassengerInfo(name);
 			ticket.setEmail(passModel.getCustomer().getEmail());
-			ticket.setPhone(passModel.getCustomer().getPhone());
+			if (passModel.getCustomer().getPhone() != null) {
+				ticket.setPhone(passModel.getCustomer().getPhone().replaceAll("\\D", ""));
+			}
 			ticket.setSeat(passModel.getSeat());
 			tickets.add(ticket);
 		}
