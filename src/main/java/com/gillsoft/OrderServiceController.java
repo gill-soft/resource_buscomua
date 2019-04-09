@@ -387,7 +387,7 @@ public class OrderServiceController extends AbstractOrderService {
 		// преобразовываем ид заказа в объкт
 		OrderIdModel orderIdModel = new OrderIdModel().create(orderId);
 		
-		// выкупаем заказы и формируем ответ
+		// отменяем заказы и формируем ответ
 		for (OrderPart part : orderIdModel.getParts()) {
 			for (PassengerModel passModel : part.getPassengers()) {
 				try {

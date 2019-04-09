@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration monitorInterval="10" strict="true">
+<Configuration strict="true">
 	<Properties>
 		<Property name="baseDir" value="/opt/tomcat/logs" />
 		<Property name="filename" value="${baseDir}/buscomua.log" />

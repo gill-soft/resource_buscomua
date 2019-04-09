@@ -96,9 +96,9 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		}
 	}
 
-	private void addResult(Map<String, Vehicle> vehicles,
-			Map<String, Locality> localities, Map<String, Organisation> organisations, Map<String, Segment> segments,
-			List<TripContainer> containers, TripPackage result) {
+	private void addResult(Map<String, Vehicle> vehicles, Map<String, Locality> localities,
+			Map<String, Organisation> organisations, Map<String, Segment> segments, List<TripContainer> containers,
+			TripPackage result) {
 		TripContainer container = new TripContainer();
 		container.setRequest(result.getRequest());
 		if (result != null
