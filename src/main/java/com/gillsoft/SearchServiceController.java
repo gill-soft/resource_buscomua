@@ -247,11 +247,11 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		if (response != null
 				&& response.getSeats() != null) {
 			List<Seat> seats = new ArrayList<>();
-			for (Byte num : response.getSeats().getSeat()) {
-				if (num != 0) {
+			for (TicketResponse.Seats.Seat respSeat : response.getSeats().getSeat()) {
+				if (respSeat.getValue() != null) {
 					Seat seat = new Seat();
-					seat.setId(String.valueOf(num));
-					seat.setNumber(seat.getId());
+					seat.setId(String.valueOf(respSeat.getValue()));
+					seat.setNumber(seat.getId());//TODO
 					seats.add(seat);
 				}
 			}

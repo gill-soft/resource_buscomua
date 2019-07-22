@@ -183,6 +183,7 @@
 						<xs:element name="Server" type="tripPoint" />
 						<xs:element type="xs:string" name="tib" />
 						<xs:element type="xs:string" name="requiredInfo" />
+						<xs:element type="xs:string" name="carrier" />
 					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
@@ -248,23 +249,41 @@
 			<xs:element name="seats">
 				<xs:complexType>
 					<xs:sequence>
-						<xs:element type="xs:byte" name="seat" maxOccurs="unbounded"
-							minOccurs="0" />
+						<xs:element name="seat" maxOccurs="unbounded"
+							minOccurs="0">
+							<xs:complexType>
+								<xs:simpleContent>
+									<xs:extension base="xs:string">
+										<xs:attribute type="xs:string" name="className" use="optional" />
+										<xs:attribute type="xs:string" name="classType" use="optional" />
+									</xs:extension>
+								</xs:simpleContent>
+							</xs:complexType>
+						</xs:element>
 					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
-			<xs:element name="CanReturn">
+			<xs:element name="CanReturn" type="canReturnType" />
+			<xs:element name="ReturnRuless">
 				<xs:complexType>
-					<xs:simpleContent>
-						<xs:extension base="xs:string">
-							<xs:attribute type="xs:string" name="retain" />
-							<xs:attribute type="xs:string" name="reason" />
-						</xs:extension>
-					</xs:simpleContent>
+					<xs:sequence>
+						<xs:element name="CanReturn" maxOccurs="unbounded"
+							minOccurs="0" type="canReturnType" />
+					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
 			<xs:element name="error" type="errorType" />
 		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="canReturnType">
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute type="xs:int" name="SecToDepMore" use="optional" />
+				<xs:attribute type="xs:decimal" name="retain" use="optional" />
+				<xs:attribute type="xs:string" name="reason" use="optional" />
+			</xs:extension>
+		</xs:simpleContent>
 	</xs:complexType>
 
 	<xs:complexType name="moneyType">

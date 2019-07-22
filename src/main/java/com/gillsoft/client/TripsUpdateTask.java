@@ -72,6 +72,10 @@ public class TripsUpdateTask implements Runnable, Serializable {
 			} catch (ParseException e) {
 			}
 		}
+		if (max == 0
+				|| max < System.currentTimeMillis()) {
+			return Config.getCacheErrorTimeToLive();
+		}
 		return max - System.currentTimeMillis();
 	}
 

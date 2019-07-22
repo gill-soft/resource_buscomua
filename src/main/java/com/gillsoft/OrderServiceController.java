@@ -1,6 +1,7 @@
 package com.gillsoft;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ import com.gillsoft.abstract_rest_service.AbstractOrderService;
 import com.gillsoft.cache.IOCacheException;
 import com.gillsoft.cache.RedisMemoryCache;
 import com.gillsoft.client.BuyRequestType;
+import com.gillsoft.client.CanReturnType;
 import com.gillsoft.client.CancelResponse;
 import com.gillsoft.client.MoneyType;
 import com.gillsoft.client.OrderIdModel;
@@ -26,6 +28,7 @@ import com.gillsoft.client.PricePart;
 import com.gillsoft.client.ServicesIdModel;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TripIdModel;
+import com.gillsoft.client.TicketResponse.ReturnRuless;
 import com.gillsoft.model.CalcType;
 import com.gillsoft.model.Commission;
 import com.gillsoft.model.Currency;
@@ -103,7 +106,7 @@ public class OrderServiceController extends AbstractOrderService {
 					item.setSeat(createSeat(serviceItem.getSeat(), ticket));
 					
 					// стоимость
-					item.setPrice(createPrice(ticket.getTicket().get(0).getMoney()));
+					item.setPrice(createPrice(ticket.getTicket().get(0).getMoney(), ticket.getReturnRuless()));
 					
 					// добавляем данные о пассажире необходимые при продаже
 					PassengerModel passengerModel = new PassengerModel();
@@ -165,7 +168,8 @@ public class OrderServiceController extends AbstractOrderService {
 	 * Сумма, которую следует перечислить системе «Автовокзал-Сеть» складывается
 	 * из стоимости билета <payment> и стоимости обслуживания операций <addTax>.
 	 */
-	private Price createPrice(MoneyType money, String paymentCode, String tariffCode, boolean addCommissions) {
+	private Price createPrice(MoneyType money, ReturnRuless rules, String paymentCode, String tariffCode,
+			boolean addCommissions) {
 		BigDecimal amount = null;
 		Tariff tariff = null;
 		List<Commission> commissions = new ArrayList<>();
@@ -181,7 +185,6 @@ public class OrderServiceController extends AbstractOrderService {
 				tariff.setValue(new BigDecimal(part.getAmount()));
 				tariff.setCode(part.getCode());
 				tariff.setName(part.getName());
-				// TODO maybe add return conditions
 			} else if (!part.getCode().contains("nВ")
 					&& !part.getCode().endsWith("н")) {
 				commissions.add(createCommission(part));
@@ -192,6 +195,10 @@ public class OrderServiceController extends AbstractOrderService {
 			commissions.add(commission);
 			amount = amount.add(commission.getValue());
 		}
+		if (tariff == null) {
+			tariff = new Tariff();
+			tariff.setValue(amount);
+		}
 		Price price = new Price();
 		price.setAmount(amount);
 		price.setCurrency(Currency.UAH);
@@ -199,11 +206,26 @@ public class OrderServiceController extends AbstractOrderService {
 		if (addCommissions) {
 			price.setCommissions(commissions);
 		}
+		if (amount != null
+				&& rules != null) {
+			List<ReturnCondition> conditions = new ArrayList<>();
+			for (CanReturnType returnType : rules.getCanReturn()) {
+				if ("yes".equals(returnType.getValue())) {
+					ReturnCondition condition = new ReturnCondition();
+					condition.setMinutesBeforeDepart(returnType.getSecToDepMore() / 60);
+					condition.setReturnPercent(new BigDecimal(100).subtract(returnType.getRetain().multiply(new BigDecimal(100)).divide(amount, 2, RoundingMode.HALF_EVEN)));
+					conditions.add(condition);
+				}
+			}
+			if (!conditions.isEmpty()) {
+				tariff.setReturnConditions(conditions);
+			}
+		}
 		return price;
 	}
 	
-	private Price createPrice(MoneyType money) {
-		return createPrice(money, PAYMENT_CODE, TARIFF_CODE, true);
+	private Price createPrice(MoneyType money, ReturnRuless rules) {
+		return createPrice(money, rules, PAYMENT_CODE, TARIFF_CODE, true);
 	}
 	
 	private Commission createCommission(PricePart part) {
@@ -219,18 +241,18 @@ public class OrderServiceController extends AbstractOrderService {
 	private Seat createSeat(Seat seat, TicketResponse response) {
 		if (response.getSeats() != null) {
 			if (seat != null) {
-				for (Byte number : response.getSeats().getSeat()) {
-					if (number.byteValue() == Byte.valueOf(seat.getId()).byteValue()) {
+				for (TicketResponse.Seats.Seat respSeat : response.getSeats().getSeat()) {
+					if (Objects.equals(respSeat.getValue(), seat.getId())) {
 						seat.setNumber(seat.getId());
-						response.getSeats().getSeat().remove(number);
+						response.getSeats().getSeat().remove(respSeat);
 						return seat;
 					}
 				}
 			}
 			// если указанного места нет, то первое свободное
-			Byte number = response.getSeats().getSeat().remove(0);
+			TicketResponse.Seats.Seat respSeat = response.getSeats().getSeat().remove(0);
 			Seat newSeat = new Seat();
-			newSeat.setId(String.valueOf(number));
+			newSeat.setId(String.valueOf(respSeat.getValue()));
 			newSeat.setNumber(newSeat.getId());
 			return newSeat;
 		}
@@ -332,7 +354,7 @@ public class OrderServiceController extends AbstractOrderService {
 							item.setConfirmed(true);
 							
 							// обновляем стоимость билета
-							item.setPrice(createPrice(ticket.getMoney()));
+							item.setPrice(createPrice(ticket.getMoney(), ticketResponse.getReturnRuless()));
 							
 							// добавляем AsUid
 							item.setAdditionals(new HashMap<>());
@@ -463,7 +485,8 @@ public class OrderServiceController extends AbstractOrderService {
 						model.getTrip().getDate(),
 						model.getUid(),
 						asUid, TCPClient.RETURN_MODE);
-				Price price = createPrice(cancelResponse.getReturnStatement().getMoney(), RETURN_CODE, null, false);
+				// TODO add return condition
+				Price price = createPrice(cancelResponse.getReturnStatement().getMoney(), null, RETURN_CODE, null, false);
 				
 				if (cancelResponse.getReturnStatement().getRulesReturn() != null) {
 					
