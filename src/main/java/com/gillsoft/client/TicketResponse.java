@@ -9,9 +9,9 @@
 package com.gillsoft.client;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -586,7 +586,7 @@ public class TicketResponse extends BaseResponse implements Serializable {
      *         &lt;/element>
      *         &lt;element name="insurance" type="{http://www.w3.org/2001/XMLSchema}string"/>
      *         &lt;element name="carrier" type="{http://www.w3.org/2001/XMLSchema}string"/>
-     *         &lt;element name="distance" type="{http://www.w3.org/2001/XMLSchema}decimal"/>
+     *         &lt;element name="distance" type="{http://www.w3.org/2001/XMLSchema}string"/>
      *         &lt;element name="money" type="{}moneyType"/>
      *       &lt;/sequence>
      *     &lt;/restriction>
@@ -636,7 +636,7 @@ public class TicketResponse extends BaseResponse implements Serializable {
         @XmlElement(required = true)
         protected String carrier;
         @XmlElement(required = true)
-        protected BigDecimal distance;
+        protected String distance;
         @XmlElement(required = true)
         protected MoneyType money;
 
@@ -885,10 +885,10 @@ public class TicketResponse extends BaseResponse implements Serializable {
          * 
          * @return
          *     possible object is
-         *     {@link BigDecimal }
+         *     {@link String }
          *     
          */
-        public BigDecimal getDistance() {
+        public String getDistance() {
             return distance;
         }
 
@@ -897,10 +897,10 @@ public class TicketResponse extends BaseResponse implements Serializable {
          * 
          * @param value
          *     allowed object is
-         *     {@link BigDecimal }
+         *     {@link String }
          *     
          */
-        public void setDistance(BigDecimal value) {
+        public void setDistance(String value) {
             this.distance = value;
         }
 

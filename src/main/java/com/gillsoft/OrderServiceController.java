@@ -27,8 +27,8 @@ import com.gillsoft.client.PassengerModel;
 import com.gillsoft.client.PricePart;
 import com.gillsoft.client.ServicesIdModel;
 import com.gillsoft.client.TicketResponse;
-import com.gillsoft.client.TripIdModel;
 import com.gillsoft.client.TicketResponse.ReturnRuless;
+import com.gillsoft.client.TripIdModel;
 import com.gillsoft.model.CalcType;
 import com.gillsoft.model.Commission;
 import com.gillsoft.model.Currency;
@@ -107,6 +107,13 @@ public class OrderServiceController extends AbstractOrderService {
 					
 					// стоимость
 					item.setPrice(createPrice(ticket.getTicket().get(0).getMoney(), ticket.getReturnRuless()));
+					
+					// доппараметры для билета
+					item.setAdditionals(new HashMap<>());
+					item.getAdditionals().put("serverCode", tripIdModel.getServerCode());
+					item.getAdditionals().put("serverName", tripIdModel.getServerName());
+					item.getAdditionals().put("serverAddress", tripIdModel.getServerAddress());
+					item.getAdditionals().put("tib", tripIdModel.getTib());
 					
 					// добавляем данные о пассажире необходимые при продаже
 					PassengerModel passengerModel = new PassengerModel();
@@ -359,6 +366,10 @@ public class OrderServiceController extends AbstractOrderService {
 							// добавляем AsUid
 							item.setAdditionals(new HashMap<>());
 							item.getAdditionals().put("AsUid", ticket.getAsUID().getValue());
+							item.getAdditionals().put("Askod", ticket.getAsUID().getAskod());
+							item.getAdditionals().put("distance", ticket.getDistance());
+							item.getAdditionals().put("route", ticket.getRound().getPointFrom().getValue()
+									+ " " + ticket.getRound().getPointTo().getValue());
 							
 							// сохраняем AsUid в кэш, чтобы можно было аннулировать потом заказ
 							saveAsUid(ticket.getUid(), ticket.getAsUID().getValue());

@@ -34,6 +34,8 @@ import com.gillsoft.model.RestError;
 import com.gillsoft.model.ReturnCondition;
 import com.gillsoft.model.Route;
 import com.gillsoft.model.Seat;
+import com.gillsoft.model.SeatStatus;
+import com.gillsoft.model.SeatType;
 import com.gillsoft.model.SeatsScheme;
 import com.gillsoft.model.Segment;
 import com.gillsoft.model.Tariff;
@@ -252,6 +254,8 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 					Seat seat = new Seat();
 					seat.setId(String.valueOf(respSeat.getValue()));
 					seat.setNumber(seat.getId());//TODO
+					seat.setStatus(SeatStatus.FREE);
+					seat.setType(SeatType.SEAT);
 					seats.add(seat);
 				}
 			}
