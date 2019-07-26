@@ -91,7 +91,14 @@ public class OrderServiceController extends AbstractOrderService {
 				for (ServiceItem serviceItem : order.getValue()) {
 					ServiceItem item = new ServiceItem();
 					
-					String uid = client.getRandomId();
+					String uid = null;
+					if (serviceItem.getAdditionals() == null
+							|| serviceItem.getAdditionals().get("uniqueId") == null) {
+						uid = client.getRandomId();
+					} else {
+						uid = serviceItem.getAdditionals().get("uniqueId");
+						client.saveUid(uid);
+					}
 					item.setId(new ServicesIdModel(uid, tripIdModel).asString());
 					
 					item.setNumber(client.createUid(uid));

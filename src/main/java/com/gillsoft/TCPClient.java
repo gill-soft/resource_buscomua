@@ -539,13 +539,12 @@ public class TCPClient {
 	public String getRandomId() {
 		try {
 			Integer value = null;
-			Map<String, Object> params = new HashMap<>();
+			Map<String, Object> params = null;
 			do {
 				SecureRandom crunchifyPRNG = SecureRandom.getInstance("SHA1PRNG");
 				value = new Integer(crunchifyPRNG.nextInt());
 				
-				params.put(RedisMemoryCache.OBJECT_NAME, getUidCacheKey(String.valueOf(value)));
-				params.put(RedisMemoryCache.IGNORE_AGE, true);
+				params = createUidParams(String.valueOf(value));
 				try {
 					cache.read(params);
 					
@@ -561,6 +560,20 @@ public class TCPClient {
 			return String.valueOf(value);
 		} catch (NoSuchAlgorithmException e) {
 			return "";
+		}
+	}
+	
+	private Map<String, Object> createUidParams(String value) {
+		Map<String, Object> params = new HashMap<>();
+		params.put(RedisMemoryCache.OBJECT_NAME, getUidCacheKey(String.valueOf(value)));
+		params.put(RedisMemoryCache.IGNORE_AGE, true);
+		return params;
+	}
+	
+	public void saveUid(String uid) {
+		try {
+			cache.write(uid, createUidParams(uid));
+		} catch (IOCacheException e) {
 		}
 	}
 	
