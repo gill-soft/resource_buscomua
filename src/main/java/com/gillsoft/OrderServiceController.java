@@ -32,6 +32,7 @@ import com.gillsoft.client.TripIdModel;
 import com.gillsoft.model.CalcType;
 import com.gillsoft.model.Commission;
 import com.gillsoft.model.Currency;
+import com.gillsoft.model.Lang;
 import com.gillsoft.model.Locality;
 import com.gillsoft.model.Organisation;
 import com.gillsoft.model.Price;
@@ -228,6 +229,18 @@ public class OrderServiceController extends AbstractOrderService {
 					ReturnCondition condition = new ReturnCondition();
 					condition.setMinutesBeforeDepart(returnType.getSecToDepMore() / 60);
 					condition.setReturnPercent(new BigDecimal(100).subtract(returnType.getRetain().multiply(new BigDecimal(100)).divide(amount, 2, RoundingMode.HALF_EVEN)));
+					condition.setTitle(Lang.UA, "Повернення " + condition.getReturnPercent() + "%");
+					if (condition.getMinutesBeforeDepart() > 0) {
+						condition.setDescription(Lang.UA, "За "
+								+ (condition.getMinutesBeforeDepart() / 60 > 0 ? (condition.getMinutesBeforeDepart() / 60) + " год. " : "")
+								+ (condition.getMinutesBeforeDepart() % 60 > 0 ? (condition.getMinutesBeforeDepart() % 60) + " хв. " : "")
+								+ " до відправлення повертається " + condition.getReturnPercent() + "%");
+					} else {
+						condition.setDescription(Lang.UA, "Через "
+								+ (condition.getMinutesBeforeDepart() / 60 > 0 ? (condition.getMinutesBeforeDepart() / 60) + " год. " : "")
+								+ (condition.getMinutesBeforeDepart() % 60 > 0 ? (condition.getMinutesBeforeDepart() % 60) + " хв. " : "")
+								+ " після відправлення повертається " + condition.getReturnPercent() + "%");
+					}
 					conditions.add(condition);
 				}
 			}
