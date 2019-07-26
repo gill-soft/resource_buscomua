@@ -219,11 +219,15 @@ public class TCPClient {
 			Reader reader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()), CHARSET);
 			return unmarshallToObjectFromReader(reader, Answer.class);
 		} catch (InterruptedException e) {
+			LOGGER.error("Не удалось получить свободное соединение. В течении "
+					+ (6 * Config.getSoTimeout() / 1000) + " секунд.", e);
 			throw new RequestException("Не удалось получить свободное соединение. В течении "
 					+ (6 * Config.getSoTimeout() / 1000) + " секунд.");
 		} catch (IOException e) {
+			LOGGER.error("Не удалось отправить/получить запрос/ответ ресурса.", e);
 			throw new RequestException("Не удалось отправить/получить запрос/ответ ресурса.");
 		} catch (JAXBException e) {
+			LOGGER.error("Не удалось преобразовать запрос/ответ ресурса.", e);
 			throw new RequestException("Не удалось преобразовать запрос/ответ ресурса.");
 		} finally {
 			if (socket != null) {
