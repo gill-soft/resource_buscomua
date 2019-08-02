@@ -550,7 +550,10 @@ public class OrderServiceController extends AbstractOrderService {
 					// стоимость удержания
 					Price retainPrice = createPrice(cancelResponse.getReturnStatement().getMoney(), null);
 					salePrice.setAmount(returnPrice.getAmount());
-					salePrice.getTariff().setValue(salePrice.getTariff().getValue().subtract(retainPrice.getTariff().getValue()));
+					if (retainPrice.getTariff() != null
+							&& retainPrice.getTariff().getValue() != null) {
+						salePrice.getTariff().setValue(salePrice.getTariff().getValue().subtract(retainPrice.getTariff().getValue()));
+					}
 					for (Commission saleComm : salePrice.getCommissions()) {
 						for (Commission retainComm : salePrice.getCommissions()) {
 							if (Objects.equals(saleComm.getCode(), retainComm.getCode())) {
