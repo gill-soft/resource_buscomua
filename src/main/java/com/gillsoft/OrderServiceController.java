@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gillsoft.abstract_rest_service.AbstractOrderService;
@@ -25,6 +27,7 @@ import com.gillsoft.client.OrderIdModel;
 import com.gillsoft.client.OrderPart;
 import com.gillsoft.client.PassengerModel;
 import com.gillsoft.client.PricePart;
+import com.gillsoft.client.RequestException;
 import com.gillsoft.client.ServicesIdModel;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TicketResponse.ReturnRuless;
@@ -508,6 +511,19 @@ public class OrderServiceController extends AbstractOrderService {
 			ServicesIdModel model = new ServicesIdModel().create(serviceItem.getId());
 			try {
 				String asUid = getAsUid(client.createUid(model.getUid()));
+				
+				// для исходной стоимости
+				TicketResponse ticketResponse = null;
+				try {
+					ticketResponse = client.getStatus(
+							model.getTrip().getServerCode(),
+							model.getTrip().getId(),
+							model.getTrip().getFromId(),
+							model.getTrip().getToId(),
+							model.getTrip().getDate(),
+							model.getUid(), asUid);
+				} catch (Exception e) {
+				}
 				CancelResponse cancelResponse = client.cancel(
 						model.getTrip().getServerCode(),
 						model.getTrip().getId(),
@@ -516,21 +532,49 @@ public class OrderServiceController extends AbstractOrderService {
 						model.getTrip().getDate(),
 						model.getUid(),
 						asUid, TCPClient.RETURN_MODE);
-				// TODO add return condition
-				Price price = createPrice(cancelResponse.getReturnStatement().getMoney(), null, RETURN_CODE, null, false);
 				
+				// исходная стоимость
+				Price salePrice = null;
+				if (ticketResponse != null) {
+					for (TicketResponse.Ticket ticket : ticketResponse.getTicket()) {
+						if (Objects.equals(ticket.getUid(), client.createUid(model.getUid()))) {
+							salePrice = createPrice(ticket.getMoney(), ticketResponse.getReturnRuless());
+						}
+					}
+				}
+				Price returnPrice = createPrice(cancelResponse.getReturnStatement().getMoney(), null, RETURN_CODE, null, false);
+				
+				// если есть исходная стоимость, то считаем возврат
+				if (salePrice != null) {
+					
+					// стоимость удержания
+					Price retainPrice = createPrice(cancelResponse.getReturnStatement().getMoney(), null);
+					salePrice.setAmount(returnPrice.getAmount());
+					salePrice.getTariff().setValue(salePrice.getTariff().getValue().subtract(retainPrice.getTariff().getValue()));
+					for (Commission saleComm : salePrice.getCommissions()) {
+						for (Commission retainComm : salePrice.getCommissions()) {
+							if (Objects.equals(saleComm.getCode(), retainComm.getCode())) {
+								saleComm.setValue(saleComm.getValue().subtract(retainComm.getValue()));
+								break;
+							}
+						}
+					}
+					returnPrice = salePrice;
+				}
+				// устанавливаем условие возврата
 				if (cancelResponse.getReturnStatement().getRulesReturn() != null) {
 					
 					// добавляем тариф с условием возврата
-					Tariff tariff = new Tariff();
-					price.setTariff(tariff);
+					if (returnPrice.getTariff() == null) {
+						Tariff tariff = new Tariff();
+						returnPrice.setTariff(tariff);
+					}
 					ReturnCondition condition = new ReturnCondition();
 					condition.setDescription(cancelResponse.getReturnStatement().getRulesReturn().getRule()
 							.stream().map(rule -> rule.getValue()).collect(Collectors.joining("\n")));
-					tariff.setReturnConditions(new ArrayList<>(1));
-					tariff.getReturnConditions().add(condition);
+					returnPrice.getTariff().setReturnConditions(Collections.singletonList(condition));
 				}
-				serviceItem.setPrice(price);
+				serviceItem.setPrice(returnPrice);
 				serviceItem.setConfirmed(true);
 			} catch (Exception e) {
 				serviceItem.setConfirmed(false);
@@ -544,6 +588,15 @@ public class OrderServiceController extends AbstractOrderService {
 	@Override
 	public OrderResponse getPdfDocumentsResponse(OrderRequest request) {
 		throw TCPClient.createUnavailableMethod();
+	}
+	
+	@GetMapping("/api/balance")
+	public String getBalance() {
+		try {
+			return client.getBalance();
+		} catch (RequestException e) {
+			return null;
+		}
 	}
 
 }

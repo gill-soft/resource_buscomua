@@ -516,6 +516,20 @@ public class TCPClient {
 //		}
 //	}
 	
+	public String getBalance() throws RequestException {
+		Ask request = new Ask();
+		RequestType requestType = new RequestType();
+		request.setGetBalance(requestType);
+		addIdent(request);
+		addTechInfo(request.getGetBalance());
+		Answer answer = sendRequest(request);
+		if (answer.getGetBalance().getBalance() != null) {
+			return answer.getGetBalance().getBalance().getCurrent().toString();
+		} else {
+			return null;
+		}
+	}
+	
 	public static String getStationCacheKey(String id) {
 		return STATIONS_CACHE_KEY + id;
 	}
