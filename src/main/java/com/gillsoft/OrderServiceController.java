@@ -217,6 +217,9 @@ public class OrderServiceController extends AbstractOrderService {
 			tariff = new Tariff();
 			tariff.setValue(amount);
 		}
+		// по договору сборы насчитываются не на тариф, а на полную стоимость. по этому за тариф принимаем стоимость
+		tariff.setValue(amount);
+		
 		Price price = new Price();
 		price.setAmount(amount);
 		price.setCurrency(Currency.UAH);
@@ -231,7 +234,7 @@ public class OrderServiceController extends AbstractOrderService {
 				if ("yes".equals(returnType.getValue())) {
 					ReturnCondition condition = new ReturnCondition();
 					condition.setMinutesBeforeDepart(returnType.getSecToDepMore() / 60);
-					condition.setReturnPercent(new BigDecimal(100).subtract(returnType.getRetain().multiply(new BigDecimal(100)).divide(amount, 2, RoundingMode.HALF_EVEN)));
+					condition.setReturnPercent(new BigDecimal(100).subtract(returnType.getRetain().multiply(new BigDecimal(100)).divide(amount, 2, RoundingMode.HALF_UP)));
 					condition.setTitle(Lang.UA, "Повернення " + condition.getReturnPercent() + "%");
 					if (condition.getMinutesBeforeDepart() > 0) {
 						condition.setDescription(Lang.UA, "За "
@@ -263,7 +266,9 @@ public class OrderServiceController extends AbstractOrderService {
 		commission.setCode(part.getCode());
 		commission.setName(part.getName());
 		commission.setType(ValueType.FIXED);
-		commission.setValueCalcType(CalcType.OUT);
+		
+		// чтобы сборы не участвовали в очистке, то ставим их от тарифа
+		commission.setValueCalcType(CalcType.FROM);
 		commission.setValue(new BigDecimal(part.getAmount()));
 		return commission;
 	}
@@ -553,6 +558,9 @@ public class OrderServiceController extends AbstractOrderService {
 					if (retainPrice.getTariff() != null
 							&& retainPrice.getTariff().getValue() != null) {
 						salePrice.getTariff().setValue(salePrice.getTariff().getValue().subtract(retainPrice.getTariff().getValue()));
+						
+						// по договору сборы насчитываются не на тариф, а на полную стоимость. по этому за тариф принимаем стоимость
+						salePrice.getTariff().setValue(returnPrice.getAmount());
 					}
 					for (Commission saleComm : salePrice.getCommissions()) {
 						for (Commission retainComm : salePrice.getCommissions()) {
@@ -570,6 +578,9 @@ public class OrderServiceController extends AbstractOrderService {
 					// добавляем тариф с условием возврата
 					if (returnPrice.getTariff() == null) {
 						Tariff tariff = new Tariff();
+						
+						// по договору сборы насчитываются не на тариф, а на полную стоимость. по этому за тариф принимаем стоимость
+						tariff.setValue(returnPrice.getAmount());
 						returnPrice.setTariff(tariff);
 					}
 					ReturnCondition condition = new ReturnCondition();
