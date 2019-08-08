@@ -27,7 +27,7 @@
 	<Loggers>
 		<Logger name="org.springframework" level="error" />
 		<Root level="INFO">
-			<AppenderRef ref="STDOUT" />
+			<AppenderRef ref="STDOUT" level="ERROR" />
 			<AppenderRef ref="RollingFile" />
 		</Root>
 	</Loggers>
