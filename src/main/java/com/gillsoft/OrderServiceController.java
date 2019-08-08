@@ -209,9 +209,7 @@ public class OrderServiceController extends AbstractOrderService {
 			}
 		}
 		for (PricePart part : money.getAddTax()) {
-			Commission commission = createCommission(part);
-			commissions.add(commission);
-			amount = amount.add(commission.getValue());
+			commissions.add(createCommission(part));
 		}
 		if (tariff == null) {
 			tariff = new Tariff();
