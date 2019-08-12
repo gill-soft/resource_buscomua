@@ -13,6 +13,7 @@
 				<xs:element name="getListTripsWithFreePlacesKOATUU" type="tripsResponse" />
 				<xs:element name="infoTicket" type="ticketResponse" />
 				<xs:element name="buyTicket" type="ticketResponse" />
+				<xs:element name="statusTicket" type="ticketResponse" />
 				<xs:element name="cancelTicket" type="cancelResponse" />
 				<xs:element name="error" type="errorType" />
 			</xs:sequence>

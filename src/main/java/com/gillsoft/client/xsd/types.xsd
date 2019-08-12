@@ -204,6 +204,7 @@
 	<xs:complexType name="ticketResponse">
 		<xs:sequence>
 			<xs:element name="techInfo" type="techInfoType" />
+			<xs:element name="returnStatement" type="returnStatementType" />
 			<xs:element name="Ticket" maxOccurs="unbounded" minOccurs="0">
 				<xs:complexType>
 					<xs:sequence>
@@ -241,7 +242,7 @@
 						</xs:element>
 						<xs:element type="xs:string" name="insurance" />
 						<xs:element type="xs:string" name="carrier" />
-						<xs:element type="xs:decimal" name="distance" />
+						<xs:element type="xs:string" name="distance" />
 						<xs:element name="money" type="moneyType" />
 					</xs:sequence>
 				</xs:complexType>
@@ -298,32 +299,32 @@
 	<xs:complexType name="cancelResponse">
 		<xs:sequence>
 			<xs:element name="techInfo" type="techInfoType" />
-			<xs:element name="returnStatement">
+			<xs:element name="returnStatement" type="returnStatementType" />
+			<xs:element name="error" type="errorType" />
+		</xs:sequence>
+	</xs:complexType>
+	
+	<xs:complexType name="returnStatementType">
+		<xs:sequence>
+			<xs:element type="xs:string" name="AsUID" />
+			<xs:element name="rulesReturn">
 				<xs:complexType>
 					<xs:sequence>
-						<xs:element type="xs:string" name="AsUID" />
-						<xs:element name="rulesReturn">
+						<xs:element name="rule" maxOccurs="unbounded"
+							minOccurs="0">
 							<xs:complexType>
-								<xs:sequence>
-									<xs:element name="rule" maxOccurs="unbounded"
-										minOccurs="0">
-										<xs:complexType>
-											<xs:simpleContent>
-												<xs:extension base="xs:string">
-													<xs:attribute type="xs:string" name="code" />
-													<xs:attribute type="xs:string" name="count" />
-												</xs:extension>
-											</xs:simpleContent>
-										</xs:complexType>
-									</xs:element>
-								</xs:sequence>
+								<xs:simpleContent>
+									<xs:extension base="xs:string">
+										<xs:attribute type="xs:string" name="code" />
+										<xs:attribute type="xs:string" name="count" />
+									</xs:extension>
+								</xs:simpleContent>
 							</xs:complexType>
 						</xs:element>
-						<xs:element name="money" type="moneyType" />
 					</xs:sequence>
 				</xs:complexType>
 			</xs:element>
-			<xs:element name="error" type="errorType" />
+			<xs:element name="money" type="moneyType" />
 		</xs:sequence>
 	</xs:complexType>
 

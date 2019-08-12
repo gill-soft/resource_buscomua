@@ -28,6 +28,7 @@ import com.gillsoft.client.OrderPart;
 import com.gillsoft.client.PassengerModel;
 import com.gillsoft.client.PricePart;
 import com.gillsoft.client.RequestException;
+import com.gillsoft.client.ReturnStatementType;
 import com.gillsoft.client.ServicesIdModel;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TicketResponse.ReturnRuless;
@@ -495,7 +496,11 @@ public class OrderServiceController extends AbstractOrderService {
 						model.getTrip().getToId(),
 						model.getTrip().getDate(),
 						model.getUid(), asUid);
-				if (!Objects.equals(YES_CODE, ticketResponse.getCanReturn().getValue())) {
+				if (ticketResponse.getReturnStatement() != null) {
+					Price returnPrice = createPrice(ticketResponse.getReturnStatement().getMoney(), null, RETURN_CODE, null, false);
+					addReturnPrice(serviceItem, returnPrice, ticketResponse.getReturnStatement());
+				} else if (ticketResponse.getCanReturn() != null
+						&& !Objects.equals(YES_CODE, ticketResponse.getCanReturn().getValue())) {
 					throw new Exception(ticketResponse.getCanReturn().getReason());
 				}
 			} catch (Exception e) {
@@ -515,6 +520,8 @@ public class OrderServiceController extends AbstractOrderService {
 			try {
 				String asUid = getAsUid(client.createUid(model.getUid()));
 				
+				ReturnStatementType returnStatement = null;
+				
 				// для исходной стоимости
 				TicketResponse ticketResponse = null;
 				try {
@@ -525,33 +532,46 @@ public class OrderServiceController extends AbstractOrderService {
 							model.getTrip().getToId(),
 							model.getTrip().getDate(),
 							model.getUid(), asUid);
+					
+					// проверяем возвращен ли уже билет
+					if (ticketResponse != null
+							&& ticketResponse.getReturnStatement() != null) {
+						returnStatement = ticketResponse.getReturnStatement();
+					}
 				} catch (Exception e) {
 				}
-				CancelResponse cancelResponse = client.cancel(
-						model.getTrip().getServerCode(),
-						model.getTrip().getId(),
-						model.getTrip().getFromId(),
-						model.getTrip().getToId(),
-						model.getTrip().getDate(),
-						model.getUid(),
-						asUid, TCPClient.RETURN_MODE);
-				
+				// если еще не вернули
+				CancelResponse cancelResponse = null;
+				if (returnStatement == null) {
+					cancelResponse = client.cancel(
+							model.getTrip().getServerCode(),
+							model.getTrip().getId(),
+							model.getTrip().getFromId(),
+							model.getTrip().getToId(),
+							model.getTrip().getDate(),
+							model.getUid(),
+							asUid, TCPClient.RETURN_MODE);
+				}
 				// исходная стоимость
 				Price salePrice = null;
-				if (ticketResponse != null) {
+				if (returnStatement == null
+						&& ticketResponse != null) {
 					for (TicketResponse.Ticket ticket : ticketResponse.getTicket()) {
 						if (Objects.equals(ticket.getUid(), client.createUid(model.getUid()))) {
 							salePrice = createPrice(ticket.getMoney(), ticketResponse.getReturnRuless());
 						}
 					}
 				}
-				Price returnPrice = createPrice(cancelResponse.getReturnStatement().getMoney(), null, RETURN_CODE, null, false);
+				if (cancelResponse != null) {
+					returnStatement = cancelResponse.getReturnStatement();
+				}
+				Price returnPrice = createPrice(returnStatement.getMoney(), null, RETURN_CODE, null, false);
 				
 				// если есть исходная стоимость, то считаем возврат
 				if (salePrice != null) {
 					
 					// стоимость удержания
-					Price retainPrice = createPrice(cancelResponse.getReturnStatement().getMoney(), null);
+					Price retainPrice = createPrice(returnStatement.getMoney(), null);
 					salePrice.setAmount(returnPrice.getAmount());
 					if (retainPrice.getTariff() != null
 							&& retainPrice.getTariff().getValue() != null) {
@@ -570,23 +590,7 @@ public class OrderServiceController extends AbstractOrderService {
 					}
 					returnPrice = salePrice;
 				}
-				// устанавливаем условие возврата
-				if (cancelResponse.getReturnStatement().getRulesReturn() != null) {
-					
-					// добавляем тариф с условием возврата
-					if (returnPrice.getTariff() == null) {
-						Tariff tariff = new Tariff();
-						
-						// по договору сборы насчитываются не на тариф, а на полную стоимость. по этому за тариф принимаем стоимость
-						tariff.setValue(returnPrice.getAmount());
-						returnPrice.setTariff(tariff);
-					}
-					ReturnCondition condition = new ReturnCondition();
-					condition.setDescription(cancelResponse.getReturnStatement().getRulesReturn().getRule()
-							.stream().map(rule -> rule.getValue()).collect(Collectors.joining("\n")));
-					returnPrice.getTariff().setReturnConditions(Collections.singletonList(condition));
-				}
-				serviceItem.setPrice(returnPrice);
+				addReturnPrice(serviceItem, returnPrice, returnStatement);
 				serviceItem.setConfirmed(true);
 			} catch (Exception e) {
 				serviceItem.setConfirmed(false);
@@ -595,6 +599,27 @@ public class OrderServiceController extends AbstractOrderService {
 			response.getServices().add(serviceItem);
 		}
 		return response;
+	}
+	
+	private void addReturnPrice(ServiceItem serviceItem, Price returnPrice, ReturnStatementType returnStatement) {
+		
+		// устанавливаем условие возврата
+		if (returnStatement.getRulesReturn() != null) {
+			
+			// добавляем тариф с условием возврата
+			if (returnPrice.getTariff() == null) {
+				Tariff tariff = new Tariff();
+				
+				// по договору сборы насчитываются не на тариф, а на полную стоимость. по этому за тариф принимаем стоимость
+				tariff.setValue(returnPrice.getAmount());
+				returnPrice.setTariff(tariff);
+			}
+			ReturnCondition condition = new ReturnCondition();
+			condition.setDescription(returnStatement.getRulesReturn().getRule()
+					.stream().map(rule -> rule.getValue()).collect(Collectors.joining("\n")));
+			returnPrice.getTariff().setReturnConditions(Collections.singletonList(condition));
+		}
+		serviceItem.setPrice(returnPrice);
 	}
 
 	@Override
