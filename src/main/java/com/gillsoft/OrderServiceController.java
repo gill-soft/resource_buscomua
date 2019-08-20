@@ -161,8 +161,8 @@ public class OrderServiceController extends AbstractOrderService {
 			
 			segment.setNumber(ticket.getRound().getNum());
 			
-			segment.setDeparture(controller.addLocality(localities, ticket.getPointFrom()));
-			segment.setArrival(controller.addLocality(localities, ticket.getPointTo()));
+			segment.setDeparture(controller.addLocality(localities, ticket.getPointFrom(), model.getFromId()));
+			segment.setArrival(controller.addLocality(localities, ticket.getPointTo(), model.getToId()));
 			
 			segment.setCarrier(controller.addOrganisation(organisations, ticket.getCarrier()));
 			segment.setInsurance(controller.addOrganisation(organisations, ticket.getInsurance()));

@@ -138,7 +138,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 						}
 						String segmentKey = model.asString();
 						com.gillsoft.model.Trip resTrip = new com.gillsoft.model.Trip();
-						addSegment(segmentKey, vehicles, localities, organisations, segments, trip);
+						addSegment(result.getRequest(), segmentKey, vehicles, localities, organisations, segments, trip);
 						resTrip.setId(segmentKey);
 						trips.add(resTrip);
 					}
@@ -152,8 +152,9 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		containers.add(container);
 	}
 	
-	private void addSegment(String segmentKey, Map<String, Vehicle> vehicles, Map<String, Locality> localities,
-			Map<String, Organisation> organisations, Map<String, Segment> segments, Trip trip) {
+	private void addSegment(TripSearchRequest request, String segmentKey, Map<String, Vehicle> vehicles,
+			Map<String, Locality> localities, Map<String, Organisation> organisations, Map<String, Segment> segments,
+			Trip trip) {
 		
 		// сегменты
 		Segment segment = segments.get(segmentKey);
@@ -162,8 +163,8 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 			
 			segment.setNumber(trip.getRound().getNum());
 			
-			segment.setDeparture(addLocality(localities, trip.getFromPoint()));
-			segment.setArrival(addLocality(localities, trip.getToPoint()));
+			segment.setDeparture(addLocality(localities, trip.getFromPoint(), request.getLocalityPairs().get(0)[0]));
+			segment.setArrival(addLocality(localities, trip.getToPoint(), request.getLocalityPairs().get(0)[1]));
 			
 			segment.setVehicle(addVehicle(vehicles, trip.getBus()));
 			segment.setFreeSeatsCount((int) trip.getFreePlaces());
@@ -221,12 +222,13 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 		return new Vehicle(key);
 	}
 	
-	public Locality addLocality(Map<String, Locality> localities, TripPoint point) {
+	public Locality addLocality(Map<String, Locality> localities, TripPoint point, String parentId) {
 		Locality locality = localities.get(point.getKod());
 		if (locality == null) {
 			locality = new Locality();
 			locality.setName(Lang.UA, point.getName() != null ? point.getName() : point.getValue());
 			locality.setAddress(Lang.UA, getAddress(point));
+			locality.setParent(new Locality(parentId));
 			localities.put(point.getKod(), locality);
 		}
 		return new Locality(point.getKod());
