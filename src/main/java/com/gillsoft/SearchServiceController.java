@@ -52,8 +52,11 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	private TCPClient client;
 	
 	@Autowired
-	@Qualifier("MemoryCacheHandler")
+	@Qualifier("RedisMemoryCache")
 	private CacheHandler cache;
+	
+	@Autowired
+	private LocalityServiceController localityController;
 
 	@Override
 	public List<ReturnCondition> getConditionsResponse(String tripId, String tariffId) {
@@ -306,19 +309,21 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	
 	@Override
 	public void addInitSearchCallables(List<Callable<TripPackage>> callables, String[] pair, Date date) {
-		callables.add(() -> {
-			TripPackage tripPackage = new TripPackage();
-			tripPackage.setRequest(TripSearchRequest.createRequest(pair, date));
-			try {
-				tripPackage.setTrips(client.getCacehdTrips(pair[0], pair[1], date));
-			} catch (IOCacheException e) {
-				tripPackage.setInProgress(true);
-			} catch (RequestException e) {
-				tripPackage.setInProgress(false);
-				tripPackage.setException(e);
-			}
-			return tripPackage;
-		});
+		if (localityController.isPresentBinding(pair)) {
+			callables.add(() -> {
+				TripPackage tripPackage = new TripPackage();
+				tripPackage.setRequest(TripSearchRequest.createRequest(pair, date));
+				try {
+					tripPackage.setTrips(client.getCacehdTrips(pair[0], pair[1], date));
+				} catch (IOCacheException e) {
+					tripPackage.setInProgress(true);
+				} catch (RequestException e) {
+					tripPackage.setInProgress(false);
+					tripPackage.setException(e);
+				}
+				return tripPackage;
+			});
+		}
 	}
 
 	@Override

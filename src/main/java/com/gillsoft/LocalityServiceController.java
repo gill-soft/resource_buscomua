@@ -121,5 +121,11 @@ public class LocalityServiceController extends AbstractLocalityService {
 					return p1.getLevel().compareTo(p2.getLevel());
 			}).map(func).collect(Collectors.joining(", "));
 	}
+	
+	public boolean isPresentBinding(String[] pair) {
+		Map<String, List<String>> binding = getBinding(null);
+		return binding.containsKey(pair[0])
+				&& binding.get(pair[0]).contains(pair[1]);
+	}
 
 }
