@@ -1,12 +1,15 @@
 package com.gillsoft.client;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.gillsoft.client.TripsResponse.Trip;
 import com.gillsoft.model.request.TripSearchRequest;
 
-public class TripPackage {
+public class TripPackage implements Serializable {
 	
+	private static final long serialVersionUID = 8970859082105159779L;
+
 	private TripSearchRequest request;
 	
 	private boolean inProgress;
