@@ -226,15 +226,16 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 	}
 	
 	public Locality addLocality(Map<String, Locality> localities, TripPoint point, String parentId) {
-		Locality locality = localities.get(point.getKod());
+		String pointId = parentId + "_" + point.getKod();
+		Locality locality = localities.get(pointId);
 		if (locality == null) {
 			locality = new Locality();
 			locality.setName(Lang.UA, point.getName() != null ? point.getName() : point.getValue());
 			locality.setAddress(Lang.UA, getAddress(point));
 			locality.setParent(new Locality(parentId));
-			localities.put(point.getKod(), locality);
+			localities.put(pointId, locality);
 		}
-		return new Locality(point.getKod());
+		return new Locality(pointId);
 	}
 	
 	private String getAddress(TripPoint point) {
