@@ -315,7 +315,7 @@ public class SearchServiceController extends SimpleAbstractTripSearchService<Tri
 				TripPackage tripPackage = new TripPackage();
 				tripPackage.setRequest(TripSearchRequest.createRequest(pair, date));
 				try {
-					tripPackage.setTrips(client.getCacehdTrips(pair[0], pair[1], date));
+					tripPackage.setTrips(client.getCachedTrips(pair[0], pair[1], date));
 				} catch (IOCacheException e) {
 					tripPackage.setInProgress(true);
 				} catch (RequestException e) {

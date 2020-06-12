@@ -357,7 +357,7 @@ public class TCPClient {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public List<Trip> getCacehdTrips(String dispatchId, String arriveId, Date dispatchDate)
+	public List<Trip> getCachedTrips(String dispatchId, String arriveId, Date dispatchDate)
 			throws RequestException, IOCacheException {
 		Map<String, Object> params = new HashMap<>();
 		params.put(RedisMemoryCache.OBJECT_NAME, getTripCacheKey(dispatchId, arriveId, dispatchDate));

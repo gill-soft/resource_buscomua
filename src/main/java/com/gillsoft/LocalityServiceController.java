@@ -77,7 +77,7 @@ public class LocalityServiceController extends AbstractLocalityService {
 									List<Point> arrivalPoints = client.getCachedArrivalStations(point.getKod());
 									if (arrivalPoints != null) {
 										List<String> arrivalIds = new CopyOnWriteArrayList<>();
-										for (Point arrivalPoint : points) {
+										for (Point arrivalPoint : arrivalPoints) {
 											Locality arrival = createLocality(arrivalPoint);
 											all.add(arrival);
 											arrivalIds.add(arrivalPoint.getKod());

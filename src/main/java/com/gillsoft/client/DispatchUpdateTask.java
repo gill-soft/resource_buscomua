@@ -24,5 +24,4 @@ public class DispatchUpdateTask extends AbstractStationsUpdateTask {
 		return client.getDispatchStations();
 	}
 
-
 }
