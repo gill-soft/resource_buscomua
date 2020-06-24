@@ -34,28 +34,30 @@ public class SeatsUpdateTask implements Runnable, Serializable {
 
 	@Override
 	public void run() {
-		Map<String, Object> params = new HashMap<>();
-		params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getTripInfoCacheKey(
-				serverId, tripId, dispatchId, arriveId, dispatchDate));
-		params.put(RedisMemoryCache.UPDATE_TASK, this);
-		params.put(RedisMemoryCache.TIME_TO_LIVE, Config.getCacheTripSeatsTimeToLive());
-		params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheTripSeatsUpdateDelay());
-		
 		TCPClient client = ContextProvider.getBean(TCPClient.class);
-		Object cache = null;
-		try {
-			cache = client.getTripInfo(serverId, tripId, dispatchId, arriveId, dispatchDate);
-		} catch (RequestException e) {
+		client.addOtherTask(() -> {
+			Map<String, Object> params = new HashMap<>();
+			params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getTripInfoCacheKey(
+					serverId, tripId, dispatchId, arriveId, dispatchDate));
+			params.put(RedisMemoryCache.UPDATE_TASK, this);
+			params.put(RedisMemoryCache.TIME_TO_LIVE, Config.getCacheTripSeatsTimeToLive());
+			params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheTripSeatsUpdateDelay());
 			
-			// ошибку тоже кладем в кэш до времени отправления рейсов и не обновляем
-			params.put(RedisMemoryCache.TIME_TO_LIVE, dispatchDate.getTime() - System.currentTimeMillis());
-			params.put(RedisMemoryCache.UPDATE_TASK, null);
-			cache = e;
-		}
-		try {
-			client.getCache().write(cache, params);
-		} catch (IOCacheException e) {
-		}
+			Object cache = null;
+			try {
+				cache = client.getTripInfo(serverId, tripId, dispatchId, arriveId, dispatchDate);
+			} catch (RequestException e) {
+				
+				// ошибку тоже кладем в кэш до времени отправления рейсов и не обновляем
+				params.put(RedisMemoryCache.TIME_TO_LIVE, dispatchDate.getTime() - System.currentTimeMillis());
+				params.put(RedisMemoryCache.UPDATE_TASK, null);
+				cache = e;
+			}
+			try {
+				client.getCache().write(cache, params);
+			} catch (IOCacheException e) {
+			}
+		});
 	}
 
 }

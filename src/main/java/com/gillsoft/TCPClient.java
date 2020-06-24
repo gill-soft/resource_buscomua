@@ -20,9 +20,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.bind.JAXBContext;
@@ -62,6 +66,8 @@ import com.gillsoft.client.TechInfoType;
 import com.gillsoft.client.TicketResponse;
 import com.gillsoft.client.TripsResponse.Trip;
 import com.gillsoft.client.TripsUpdateTask;
+import com.gillsoft.concurrent.PoolType;
+import com.gillsoft.concurrent.ThreadPoolStore;
 import com.gillsoft.util.StringUtil;
 
 @Component
@@ -92,6 +98,9 @@ public class TCPClient {
 	public static final FastDateFormat fullDateFormat = FastDateFormat.getInstance("E MMM dd HH:mm:ss yyyy", Locale.ENGLISH);
 	
 	private BlockingQueue<Object> connections = new ArrayBlockingQueue<>(Config.getPoolSize());
+	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(3);
+	private Queue<Runnable> searchTasks = new ConcurrentLinkedQueue<>();
+	private Queue<Runnable> otherTasks = new ConcurrentLinkedQueue<>();
 	
 	@Autowired
     @Qualifier("RedisMemoryCache")
@@ -101,24 +110,25 @@ public class TCPClient {
 		for (int i = 0; i < Config.getPoolSize(); i++) {
 			addFreeObject();
 		}
+		scheduleAtFixedRate(searchTasks, PoolType.SEARCH, 2000);
+		scheduleAtFixedRate(otherTasks, PoolType.SEARCH, 6000);
 	}
 	
-	public boolean isAvailable() {
-		Socket socket = null;
-		try {
-			// создаем соединение
-			socket = createSocket();
-			return true;
-		} catch (IOException e) {
-			return false;
-		} finally {
-			if (socket != null) {
-				try {
-					socket.close();
-				} catch (IOException e) {
-				}
+	private void scheduleAtFixedRate(Queue<Runnable> tasks, PoolType poolType, long period) {
+		executorService.scheduleAtFixedRate(() -> {
+			Runnable task = tasks.poll();
+			if (task != null) {
+				ThreadPoolStore.execute(poolType, task);
 			}
-		}
+		}, 0, period, TimeUnit.MILLISECONDS);
+	}
+	
+	public void addSearchTask(Runnable runnable) {
+		searchTasks.add(runnable);
+	}
+	
+	public void addOtherTask(Runnable runnable) {
+		otherTasks.add(runnable);
 	}
 	
 	private Socket createSocket() throws IOException {
@@ -237,7 +247,6 @@ public class TCPClient {
 				}
 				addFreeObject();
 			}
-//			incRequest(requestName);
 		}
 	}
 	
@@ -263,28 +272,6 @@ public class TCPClient {
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
         return (T) unmarshaller.unmarshal(reader);
     }
-	
-//	private void incRequest(String requestName) {
-//		CallableStatement procedure = null;
-//		Connection connection = null;
-//		try {
-//			Object[] args = { requestName };
-//			List<Object> result = Utils.callProcedure("API_BUSCOMUA.INC_COUNTER", args, new int[] { });
-//			procedure = (CallableStatement) result.get(0);
-//			connection = (Connection) result.get(1);
-//		} catch (SQLException e) {
-//			Utils.logInfo(e);
-//		} finally {
-//			OracleConnectionManager.getInstance().freeConnection(connection);
-//			try {
-//				if (procedure != null) {
-//					procedure.close();
-//				}
-//			} catch (SQLException ex) {
-//				Utils.logInfo(ex.getMessage());
-//			}
-//		}
-//	}
 	
 	private Answer checkAnswer(Answer answer, BaseResponse response) throws RequestException {
 		if (answer.getError() != null) {

@@ -33,28 +33,30 @@ public class TripsUpdateTask implements Runnable, Serializable {
 
 	@Override
 	public void run() {
-		Map<String, Object> params = new HashMap<>();
-		params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getTripCacheKey(dispatchId, arriveId, dispatchDate));
-		params.put(RedisMemoryCache.UPDATE_TASK, this);
-		params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheTripUpdateDelay());
-		
 		TCPClient client = ContextProvider.getBean(TCPClient.class);
-		Object cache = null;
-		try {
-			List<Trip> trips = client.getTrips(dispatchId, arriveId, dispatchDate);
-			params.put(RedisMemoryCache.TIME_TO_LIVE, getTimeToLive(trips));
-			cache = trips;
-		} catch (RequestException e) {
+		client.addSearchTask(() -> {
+			Map<String, Object> params = new HashMap<>();
+			params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getTripCacheKey(dispatchId, arriveId, dispatchDate));
+			params.put(RedisMemoryCache.UPDATE_TASK, this);
+			params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheTripUpdateDelay());
 			
-			// ошибку поиска тоже кладем в кэш но с другим временем жизни
-			params.put(RedisMemoryCache.TIME_TO_LIVE, Config.getCacheErrorTimeToLive());
-			params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheErrorUpdateDelay());
-			cache = e;
-		}
-		try {
-			client.getCache().write(cache, params);
-		} catch (IOCacheException e) {
-		}
+			Object cache = null;
+			try {
+				List<Trip> trips = client.getTrips(dispatchId, arriveId, dispatchDate);
+				params.put(RedisMemoryCache.TIME_TO_LIVE, getTimeToLive(trips));
+				cache = trips;
+			} catch (RequestException e) {
+				
+				// ошибку поиска тоже кладем в кэш но с другим временем жизни
+				params.put(RedisMemoryCache.TIME_TO_LIVE, Config.getCacheErrorTimeToLive());
+				params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheErrorUpdateDelay());
+				cache = e;
+			}
+			try {
+				client.getCache().write(cache, params);
+			} catch (IOCacheException e) {
+			}
+		});
 	}
 	
 	// время жизни до момента самого позднего отправления

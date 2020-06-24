@@ -26,26 +26,28 @@ public abstract class AbstractStationsUpdateTask implements Runnable, Serializab
 
 	@Override
 	public void run() {
-		Map<String, Object> params = new HashMap<>();
-		params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getStationCacheKey(stationId));
-		params.put(RedisMemoryCache.IGNORE_AGE, true);
-		params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheStationsUpdateDelay());
-		
-		try {
-			TCPClient client = ContextProvider.getBean(TCPClient.class);
-			Object cacheObject = null;
+		TCPClient client = ContextProvider.getBean(TCPClient.class);
+		client.addSearchTask(() -> {
+			Map<String, Object> params = new HashMap<>();
+			params.put(RedisMemoryCache.OBJECT_NAME, TCPClient.getStationCacheKey(stationId));
+			params.put(RedisMemoryCache.IGNORE_AGE, true);
+			params.put(RedisMemoryCache.UPDATE_DELAY, Config.getCacheStationsUpdateDelay());
+			
 			try {
-				cacheObject = createCacheObject(client, params);
-			} catch (RequestException e) {
+				Object cacheObject = null;
+				try {
+					cacheObject = createCacheObject(client, params);
+				} catch (RequestException e) {
+				}
+				if (cacheObject == null) {
+					cacheObject = client.getCache().read(params);
+				}
+				params.put(RedisMemoryCache.UPDATE_TASK, this);
+				client.getCache().write(cacheObject, params);
+			} catch (IOCacheException e) {
+				e.printStackTrace();
 			}
-			if (cacheObject == null) {
-				cacheObject = client.getCache().read(params);
-			}
-			params.put(RedisMemoryCache.UPDATE_TASK, this);
-			client.getCache().write(cacheObject, params);
-		} catch (IOCacheException e) {
-			e.printStackTrace();
-		}
+		});
 	}
 
 	protected abstract List<Point> createCacheObject(TCPClient client, Map<String, Object> params)
