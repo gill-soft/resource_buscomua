@@ -11,7 +11,7 @@
 		<jdk.version>1.8</jdk.version>
 		<spring.version>5.0.6.RELEASE</spring.version>
 		<jackson.version>2.9.5</jackson.version>
-		<log4j.version>2.11.0</log4j.version>
+		<log4j.version>2.13.3</log4j.version>
 	</properties>
 
 	<repositories>
